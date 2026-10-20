@@ -12,14 +12,24 @@ from app.models import AuditLog
 
 _VALID_OUTCOMES = frozenset({"SUCCESS", "FAILURE", "DENIED"})
 _PASSWORD_DETAIL = re.compile(
-    r"(?i)(\b(?:password|passwd|pwd|passcode|secret)\b\s*[:=]\s*)([^,;\s]+)"
+    r"""(?ix)
+    (?P<prefix>
+        (?:"|')?\b(?:password|passwd|pwd|passcode|secret)\b(?:"|')?
+        \s*[:=]\s*
+    )
+    (?P<value>
+        "(?:\\.|[^"\\])*"
+        | '(?:\\.|[^'\\])*'
+        | [^,;\s]+
+    )
+    """
 )
 _ACCOUNT_NUMBER = re.compile(r"(?<!\d)\d{10}(?!\d)")
 
 
 def _sanitize_details(details: str) -> str:
     """Remove credentials and complete account numbers from audit details."""
-    sanitized = _PASSWORD_DETAIL.sub(r"\1[REDACTED]", details)
+    sanitized = _PASSWORD_DETAIL.sub(r"\g<prefix>[REDACTED]", details)
     return _ACCOUNT_NUMBER.sub("[ACCOUNT_NUMBER_REDACTED]", sanitized)
 
 

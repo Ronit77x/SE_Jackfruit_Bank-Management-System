@@ -41,6 +41,23 @@ def test_log_event_redacts_password_like_details_in_stored_record(db):
     assert "result=changed" in stored_details
 
 
+@pytest.mark.parametrize(
+    ("details", "sensitive_value"),
+    [
+        ("password: colon secret", "colon secret"),
+        ('"password": "my secret value"', "my secret value"),
+        ("password='single quoted secret value'", "single quoted secret value"),
+        ('password="double quoted secret value"', "double quoted secret value"),
+    ],
+)
+def test_log_event_redacts_quoted_and_spaced_password_details(db, details, sensitive_value):
+    log_event(db, user_id=7, action="PASSWORD_CHANGE", outcome="SUCCESS", details=details)
+
+    stored_details = db.query(AuditLog).one().details
+    assert sensitive_value not in stored_details
+    assert "[REDACTED]" in stored_details
+
+
 def test_log_event_redacts_complete_account_number_in_stored_record(db):
     log_event(
         db,

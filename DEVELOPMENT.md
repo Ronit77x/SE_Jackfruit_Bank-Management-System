@@ -39,3 +39,9 @@ Create new files freely inside your own area (for example `app/services/account_
 5. On GitHub open a PR into `main`, title `[US-xx] Title`, description `Closes #<issue number>`, request your reviewer.
 6. The repo owner merges with "Create a merge commit".
 Never commit directly to `main`. Never force-push.
+
+## Running tests
+
+Activate the virtual environment before running tests.
+Run `pytest` from the repository root to execute all tests.
+Run `pytest tests/test_accounts.py -v` to run account tests only.

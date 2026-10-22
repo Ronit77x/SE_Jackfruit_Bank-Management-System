@@ -116,3 +116,72 @@ def withdraw(db: Session, account_number: str, amount: Decimal, user_id: int | N
         raise
     log_event(db, user_id, "WITHDRAWAL", "SUCCESS", f"{mask_account_number(account_number)} amount {amount}")
     return txn
+
+
+def _credit(account: Account, amount: Decimal) -> None:
+    account.balance = account.balance + amount
+
+
+def transfer(
+    db: Session,
+    from_number: str,
+    to_number: str,
+    amount: Decimal,
+    user_id: int | None,
+    owner_customer_id: int | None = None,
+    enforce_owner: bool = False,
+) -> Transaction:
+    """BMS-F-022 / BMS-NF-003: debit and credit succeed together or not at all.
+
+    Returns the debit-side transaction. Both rows share one `reference`.
+    """
+    try:
+        if from_number == to_number:
+            raise AppError(400, "INVALID_TRANSFER", "Source and destination accounts must be different.")
+        if amount <= 0:
+            raise AppError(400, "INVALID_AMOUNT", "Amount must be greater than 0.")
+        if amount > c.TRANSFER_LIMIT:
+            raise AppError(
+                422, "TRANSFER_LIMIT_EXCEEDED", f"Transfer limit of {c.TRANSFER_LIMIT} exceeded."
+            )
+        source = _get_account(db, from_number)
+        destination = _get_account(db, to_number)
+        if enforce_owner and source.customer_id != owner_customer_id:
+            raise AppError(403, "FORBIDDEN", "You can only transfer from your own accounts.")
+        _require_active(source)
+        _require_active(destination)
+        minimum = c.MIN_BALANCE[source.type]
+        if source.balance - amount < minimum:
+            raise AppError(
+                422,
+                "INSUFFICIENT_FUNDS",
+                f"Balance after transfer would fall below the minimum balance of {minimum}.",
+            )
+
+        reference = "TRF-" + uuid.uuid4().hex[:12].upper()
+        source.balance = source.balance - amount
+        debit = _record(db, source, c.TXN_TRANSFER_OUT, amount, reference=reference)
+        _credit(destination, amount)
+        _record(db, destination, c.TXN_TRANSFER_IN, amount, reference=reference)
+        db.commit()
+    except AppError as exc:
+        db.rollback()
+        log_event(
+            db,
+            user_id,
+            "TRANSFER",
+            "DENIED" if exc.status_code == 403 else "FAILURE",
+            f"{mask_account_number(from_number)} -> {mask_account_number(to_number)}: {exc.code}",
+        )
+        raise
+    except Exception:
+        db.rollback()
+        raise
+    log_event(
+        db,
+        user_id,
+        "TRANSFER",
+        "SUCCESS",
+        f"{mask_account_number(from_number)} -> {mask_account_number(to_number)} amount {amount} ref {reference}",
+    )
+    return debit

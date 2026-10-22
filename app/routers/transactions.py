@@ -44,3 +44,31 @@ def withdraw(body: CashRequest, user=Depends(require_roles(ROLE_TELLER)), db: Se
     """BMS-F-021. Teller records a withdrawal."""
     txn = service.withdraw(db, body.accountId, body.amount, getattr(user, "id", None))
     return CashResponse(transactionId=txn.id, receiptNo=txn.receipt_no, balance=txn.balance_after)
+
+
+class TransferRequest(BaseModel):
+    fromAccount: AccountNumber
+    toAccount: AccountNumber
+    amount: Amount
+
+
+class TransferResponse(BaseModel):
+    status: str
+    transactionId: int
+    reference: str | None
+    balance: Decimal
+
+
+@router.post("/transactions/transfer", response_model=TransferResponse, status_code=201)
+def transfer(body: TransferRequest, user=Depends(require_roles(ROLE_CUSTOMER)), db: Session = Depends(get_db)):
+    """BMS-F-022. Customer transfers money from one of their own accounts to another BMS account."""
+    txn = service.transfer(
+        db,
+        body.fromAccount,
+        body.toAccount,
+        body.amount,
+        getattr(user, "id", None),
+        owner_customer_id=getattr(user, "customer_id", None),
+        enforce_owner=getattr(user, "role", None) == ROLE_CUSTOMER,
+    )
+    return TransferResponse(status="SUCCESS", transactionId=txn.id, reference=txn.reference, balance=txn.balance_after)

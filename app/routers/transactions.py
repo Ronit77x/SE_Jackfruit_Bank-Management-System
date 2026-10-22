@@ -37,3 +37,10 @@ def deposit(body: CashRequest, user=Depends(require_roles(ROLE_TELLER)), db: Ses
     """BMS-F-020. Teller records a cash deposit."""
     txn = service.deposit(db, body.accountId, body.amount, getattr(user, "id", None))
     return CashResponse(transactionId=txn.id, receiptNo=txn.receipt_no, balance=txn.balance_after)
+
+
+@router.post("/transactions/withdraw", response_model=CashResponse, status_code=201)
+def withdraw(body: CashRequest, user=Depends(require_roles(ROLE_TELLER)), db: Session = Depends(get_db)):
+    """BMS-F-021. Teller records a withdrawal."""
+    txn = service.withdraw(db, body.accountId, body.amount, getattr(user, "id", None))
+    return CashResponse(transactionId=txn.id, receiptNo=txn.receipt_no, balance=txn.balance_after)

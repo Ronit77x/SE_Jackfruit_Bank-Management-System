@@ -1,12 +1,14 @@
 
 from datetime import date
 from decimal import Decimal
+from types import SimpleNamespace
 
 from app.constants import (
     ACCOUNT_ACTIVE,
-    TXN_OPENING_DEPOSIT,
     ROLE_CUSTOMER,
+    TXN_OPENING_DEPOSIT,
 )
+from app.deps import get_current_user
 from app.models import Account, Customer, Transaction, User
 from app.security import verify_password
 
@@ -76,7 +78,8 @@ def test_current_account_requires_minimum_deposit(client, db):
         "/accounts",
         headers={"X-Test-Role": "Teller"},
         json=new_customer_payload(
-            account_type="Current", deposit="4999.00"
+            account_type="Current",
+            deposit="4999.00",
         ),
     )
 
@@ -111,6 +114,7 @@ def test_second_account_does_not_create_another_login(client, db):
     assert "temporary_password" not in data
     assert db.query(User).count() == original_user_count
     assert db.query(Account).filter_by(customer_id=customer_id).count() == 2
+
 
 def test_current_account_accepts_exact_minimum_deposit(client):
     response = client.post(
@@ -148,3 +152,106 @@ def test_two_new_accounts_have_different_account_numbers(client):
         first.json()["account_number"]
         != second.json()["account_number"]
     )
+
+
+def test_customer_can_view_own_account_and_balance(client):
+    created = client.post(
+        "/accounts",
+        headers={"X-Test-Role": "Teller"},
+        json=new_customer_payload(),
+    )
+    assert created.status_code == 201
+
+    data = created.json()
+    customer_id = data["customer_id"]
+
+    def fake_customer():
+        return SimpleNamespace(
+            id=100,
+            role=ROLE_CUSTOMER,
+            customer_id=customer_id,
+        )
+
+    client.app.dependency_overrides[get_current_user] = fake_customer
+
+    try:
+        response = client.get("/accounts")
+    finally:
+        client.app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 200
+    accounts = response.json()["accounts"]
+
+    assert len(accounts) == 1
+    assert accounts[0]["account_number"] == (
+        "******" + data["account_number"][-4:]
+    )
+    assert accounts[0]["account_type"] == "Savings"
+    assert Decimal(accounts[0]["balance"]) == Decimal("1000.00")
+    assert accounts[0]["status"] == ACCOUNT_ACTIVE
+
+
+def test_customer_only_sees_their_own_accounts(client):
+    first = client.post(
+        "/accounts",
+        headers={"X-Test-Role": "Teller"},
+        json=new_customer_payload(),
+    )
+    second = client.post(
+        "/accounts",
+        headers={"X-Test-Role": "Teller"},
+        json={
+            **new_customer_payload(),
+            "email": "another@example.com",
+            "id_proof_number": "TEST-ID-002",
+        },
+    )
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+
+    first_data = first.json()
+    second_data = second.json()
+
+    def fake_customer():
+        return SimpleNamespace(
+            id=100,
+            role=ROLE_CUSTOMER,
+            customer_id=first_data["customer_id"],
+        )
+
+    client.app.dependency_overrides[get_current_user] = fake_customer
+
+    try:
+        response = client.get("/accounts")
+    finally:
+        client.app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 200
+    accounts = response.json()["accounts"]
+
+    assert len(accounts) == 1
+    assert accounts[0]["account_number"] == (
+        "******" + first_data["account_number"][-4:]
+    )
+    assert accounts[0]["account_number"] != (
+        "******" + second_data["account_number"][-4:]
+    )
+
+
+def test_non_customer_cannot_view_accounts(client):
+    def fake_admin():
+        return SimpleNamespace(
+            id=1,
+            role="Admin",
+            customer_id=None,
+        )
+
+    client.app.dependency_overrides[get_current_user] = fake_admin
+
+    try:
+        response = client.get("/accounts")
+    finally:
+        client.app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 401

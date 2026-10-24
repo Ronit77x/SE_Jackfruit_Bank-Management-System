@@ -1,18 +1,17 @@
-
-"""Account and customer endpoints. Owner: Member 2 (Vijay)."""
-
 from datetime import date
 from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.constants import ACCOUNT_CURRENT, ACCOUNT_SAVINGS
+from app.constants import ACCOUNT_CURRENT, ACCOUNT_SAVINGS, ROLE_CUSTOMER
 from app.database import get_db
-from app.deps import require_roles
+from app.deps import get_current_user, require_roles
+from app.models import Account
 from app.services.account_service import open_account
 from app.services.audit_service import log_event
 
@@ -80,15 +79,46 @@ def create_account(
             user_id=getattr(teller, "id", None),
             action="ACCOUNT_OPENED",
             outcome="SUCCESS",
-            details=f"Customer ID {result['customer_id']}; account type {result['account_type']}",
+            details=(
+                f"Customer ID {result['customer_id']}; "
+                f"account type {result['account_type']}"
+            ),
         )
     except Exception:
-        # Audit helper currently commits independently; don't expose internal errors.
         # Account creation has already committed at this point.
         pass
 
-    # Never include a password field for an existing customer's account.
     if result["temporary_password"] is None:
         result.pop("temporary_password")
 
     return result
+
+
+@router.get("/accounts")
+def get_my_accounts(
+    db: Annotated[Session, Depends(get_db)],
+    user=Depends(get_current_user),
+):
+    """Return the authenticated customer's account details and balances."""
+
+    if user.role != ROLE_CUSTOMER or user.customer_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authenticated customer required.",
+        )
+
+    accounts = db.scalars(
+        select(Account).where(Account.customer_id == user.customer_id)
+    ).all()
+
+    return {
+        "accounts": [
+            {
+                "account_number": f"******{account.account_number[-4:]}",
+                "account_type": account.type,
+                "balance": str(account.balance),
+                "status": account.status,
+            }
+            for account in accounts
+        ]
+    }

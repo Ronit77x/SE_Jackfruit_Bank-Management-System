@@ -7,10 +7,10 @@ Planned endpoints (baseline Part A section 3):
   GET   /admin/reports/daily        daily transaction summary
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy.orm import Session
 
-from app.constants import ROLE_TELLER, USER_ACTIVE, USER_INACTIVE
+from app.constants import ROLE_TELLER, USER_ACTIVE, USER_INACTIVE, USER_LOCKED
 from app.database import get_db
 from app.deps import require_roles
 from app.models import User
@@ -22,7 +22,16 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 class TellerCreate(BaseModel):
     username: str = Field(min_length=1, max_length=60)
-    password: str = Field(min_length=1)
+    password: str = Field(min_length=8, description="At least 8 characters with uppercase, lowercase and digit")
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        if not any(char.islower() for char in value) or not any(char.isupper() for char in value) or not any(
+            char.isdigit() for char in value
+        ):
+            raise ValueError("Password must contain uppercase, lowercase and a digit")
+        return value
 
 
 class UserAction(BaseModel):
@@ -81,10 +90,14 @@ def update_teller(
         user.status = USER_INACTIVE
         audit_action = "DEACTIVATE_TELLER"
     elif payload.action == "unlock":
+        if user.status != USER_LOCKED:
+            log_event(db, admin.id, "UNLOCK_TELLER", "FAILURE", f"Rejected unlock for Teller user id={user.id}")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Only locked users can be unlocked")
         user.status = USER_ACTIVE
         user.failed_attempts = 0
         audit_action = "UNLOCK_TELLER"
     else:
+        log_event(db, admin.id, "ADMIN_USER_ACTION", "FAILURE", f"Rejected action for Teller user id={user.id}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid action")
 
     db.flush()

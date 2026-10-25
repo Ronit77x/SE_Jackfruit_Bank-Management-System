@@ -4,7 +4,7 @@ from app.security import verify_password
 
 
 def test_admin_can_create_teller_with_hashed_password(client, db):
-    response = client.post("/admin/users", json={"username": "teller1", "password": "initial-secret"})
+    response = client.post("/admin/users", json={"username": "teller1", "password": "Initial1-secret"})
 
     assert response.status_code == 201
     body = response.json()
@@ -15,7 +15,7 @@ def test_admin_can_create_teller_with_hashed_password(client, db):
 
     user = db.query(User).filter_by(username="teller1").one()
     assert user.password_hash != "initial-secret"
-    assert verify_password("initial-secret", user.password_hash)
+    assert verify_password("Initial1-secret", user.password_hash)
     assert db.query(AuditLog).one().action == "CREATE_TELLER"
 
 
@@ -61,14 +61,35 @@ def test_admin_rejects_invalid_action_and_missing_user_without_audit(client, db)
 
     assert invalid.status_code == 400
     assert missing.status_code == 404
-    assert db.query(AuditLog).count() == 0
+    assert db.query(AuditLog).count() == 1
+    assert db.query(AuditLog).one().outcome == "FAILURE"
 
 
 def test_admin_cannot_create_duplicate_username(client, db):
     db.add(User(username="teller1", password_hash="hash", role=ROLE_TELLER))
     db.commit()
 
-    response = client.post("/admin/users", json={"username": "teller1", "password": "secret"})
+    response = client.post("/admin/users", json={"username": "teller1", "password": "Weakpass1"})
 
     assert response.status_code == 409
     assert db.query(AuditLog).count() == 0
+
+
+def test_admin_cannot_unlock_active_or_inactive_teller(client, db):
+    for state in (USER_ACTIVE, USER_INACTIVE):
+        user = User(username=f"teller-{state}", password_hash="hash", role=ROLE_TELLER, status=state)
+        db.add(user)
+    db.commit()
+
+    for user in db.query(User).all():
+        response = client.patch(f"/admin/users/{user.id}", json={"action": "unlock"})
+        assert response.status_code == 409
+        assert db.get(User, user.id).status == user.status
+    assert all(row.outcome == "FAILURE" for row in db.query(AuditLog).all())
+
+
+def test_admin_rejects_weak_initial_passwords(client, db):
+    for password in ("a", "alllowercase", "ALLUPPERCASE", "NoDigits!"):
+        response = client.post("/admin/users", json={"username": f"weak-{len(password)}", "password": password})
+        assert response.status_code == 422
+    assert db.query(User).count() == 0

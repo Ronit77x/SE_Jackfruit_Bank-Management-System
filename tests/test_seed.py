@@ -1,3 +1,4 @@
+import pytest
 from sqlalchemy import func, select
 
 from app.models import Account, Customer, User
@@ -26,10 +27,8 @@ def test_seed_completes_missing_data_after_an_interrupted_run(db, monkeypatch):
         return real_create_account(*args, **kwargs)
 
     monkeypatch.setattr(crud, "create_account", crash_on_fourth_account)
-    try:
-        seed(db)
-    except RuntimeError:
-        pass
+    with pytest.raises(RuntimeError):
+        seed(db)  # the simulated crash must really happen, otherwise this test proves nothing
     monkeypatch.setattr(crud, "create_account", real_create_account)
 
     seed(db)  # second run must finish the job without duplicates

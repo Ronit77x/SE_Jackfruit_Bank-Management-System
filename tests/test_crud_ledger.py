@@ -48,3 +48,13 @@ def test_notification_create_read_list_and_update(db):
     assert len(crud.list_notifications(db, customer.id)) == 2
     assert crud.update_notification_status(db, note.id, "SENT").status == "SENT"
     assert crud.update_notification_status(db, 9999, "SENT") is None
+
+
+def test_invalid_notification_status_is_rejected(db):
+    import pytest
+
+    customer, _ = _account(db)
+    note = crud.create_notification(db, customer.id, "Rs 100 credited")
+    with pytest.raises(ValueError):
+        crud.update_notification_status(db, note.id, "DELIVERED-MAYBE")
+    assert crud.get_notification(db, note.id).status == "LOGGED"

@@ -16,12 +16,14 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.constants import ACCOUNT_ACTIVE, USER_ACTIVE
+from app.constants import ACCOUNT_ACTIVE, NOTIFICATION_STATUSES, USER_ACTIVE
 from app.models import Account, AuditLog, Customer, Notification, Transaction, User
 
 FIRST_ACCOUNT_NUMBER = 1000000001
+MAX_ACCOUNT_NUMBER_ATTEMPTS = 5
 
 
 # ---------- customers ----------
@@ -101,17 +103,31 @@ def create_account(
     balance: Decimal = Decimal("0"),
     account_number: str | None = None,
 ) -> Account:
-    account = Account(
-        account_number=account_number or next_account_number(db),
-        customer_id=customer_id,
-        type=account_type,
-        balance=balance,
-        status=ACCOUNT_ACTIVE,
-    )
-    db.add(account)
-    db.commit()
-    db.refresh(account)
-    return account
+    """Creates an account. The database column `account_number` is UNIQUE (BR-06).
+
+    If no number is given, the next free one is generated. When two requests pick the same number at the
+    same moment, the database rejects the second one (IntegrityError); we then roll back, pick a fresh
+    number and try again (up to MAX_ACCOUNT_NUMBER_ATTEMPTS times). A number given explicitly is never retried.
+    """
+    for attempt in range(1, MAX_ACCOUNT_NUMBER_ATTEMPTS + 1):
+        account = Account(
+            account_number=account_number or next_account_number(db),
+            customer_id=customer_id,
+            type=account_type,
+            balance=balance,
+            status=ACCOUNT_ACTIVE,
+        )
+        db.add(account)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            if account_number is not None or attempt == MAX_ACCOUNT_NUMBER_ATTEMPTS:
+                raise
+            continue
+        db.refresh(account)
+        return account
+    raise RuntimeError("unreachable")  # pragma: no cover
 
 
 def get_account_by_number(db: Session, account_number: str) -> Account | None:
@@ -227,6 +243,9 @@ def list_notifications(db: Session, customer_id: int) -> list[Notification]:
 
 
 def update_notification_status(db: Session, notification_id: int, status: str) -> Notification | None:
+    """Allowed values: see NOTIFICATION_STATUSES in app/constants.py (LOGGED, SENT, FAILED)."""
+    if status not in NOTIFICATION_STATUSES:
+        raise ValueError(f"Invalid notification status {status!r}; allowed: {', '.join(NOTIFICATION_STATUSES)}")
     notification = db.get(Notification, notification_id)
     if notification is None:
         return None

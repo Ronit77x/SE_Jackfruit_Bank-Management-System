@@ -73,6 +73,20 @@ def test_log_event_redacts_complete_account_number_in_stored_record(db):
     assert "amount=2500" in stored_details
 
 
+@pytest.mark.parametrize("key", ["account", "from_account", "to_account"])
+def test_log_event_redacts_account_numbers_only_after_account_keys(db, key):
+    log_event(db, user_id=7, action="TRANSFER", outcome="SUCCESS", details=f"{key}=1234567890")
+
+    assert db.query(AuditLog).one().details == f"{key}=[ACCOUNT_NUMBER_REDACTED]"
+
+
+def test_log_event_preserves_ten_digit_phone_number(db):
+    details = "old_phone=9876543210 new_phone=9123456780"
+    log_event(db, user_id=7, action="CUSTOMER_UPDATE", outcome="SUCCESS", details=details)
+
+    assert db.query(AuditLog).one().details == details
+
+
 def test_log_event_preserves_ordinary_details(db):
     details = "customer_id=42 reason=manual review completed"
 

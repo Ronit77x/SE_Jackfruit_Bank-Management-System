@@ -6,7 +6,7 @@ database transaction: it either commits completely or rolls back completely.
 import functools
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -114,8 +114,19 @@ def deposit(db: Session, account_number: str, amount: Decimal, user_id: int | No
     return txn
 
 
+# The bank's "day" for the daily withdrawal limit (BR-02) is the India Standard Time day (UTC+05:30, no daylight saving).
+BANK_TIMEZONE = timezone(timedelta(hours=5, minutes=30))
+
+
+def _start_of_bank_day_utc() -> datetime:
+    """Midnight at the start of today in India, expressed in UTC (the timezone the database stores)."""
+    now_local = datetime.now(BANK_TIMEZONE)
+    start_local = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+    return start_local.astimezone(timezone.utc)
+
+
 def _withdrawn_today(db: Session, account_id: int) -> Decimal:
-    start_of_day = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    start_of_day = _start_of_bank_day_utc()
     total = db.scalar(
         select(func.coalesce(func.sum(Transaction.amount), 0)).where(
             Transaction.account_id == account_id,

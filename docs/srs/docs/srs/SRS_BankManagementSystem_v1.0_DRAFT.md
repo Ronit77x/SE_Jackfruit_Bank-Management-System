@@ -37,7 +37,7 @@ This Software Requirements Specification (SRS) defines the functional, non-funct
 
 The BMS is a web-based system for a single bank. It supports three user roles - Customer, Teller and Admin - and is intended to cover account opening and account information, cash deposits and withdrawals, internal BMS fund transfers, transaction history and downloadable statements, administrative Teller management, audit-log review, daily transaction reporting, and simulated debit/credit notifications.
 
-Explicit exclusions in the supplied baseline are ATM functionality and real external SMS/e-mail gateway delivery. Notification events are written to a log. Transfers described in this SRS are between accounts within the BMS; external-bank transfer support is not specified in the supplied materials and must not be assumed.
+Explicit exclusions in the supplied baseline are automated teller machine functionality functionality and real external SMS/e-mail gateway delivery. Notification events are written to a log. Transfers described in this SRS are between accounts within the BMS; external-bank transfer support is not specified in the supplied materials and must not be assumed.
 
 ### 1.3 Document conventions and terminology
 
@@ -93,7 +93,7 @@ The system must enforce these permissions on the server, not only through UI con
 
 ### 2.5 Constraints
 
-- The project is for one bank and the source baseline expressly excludes ATM functionality.
+- The project is for one bank and the source baseline expressly excludes automated teller machine functionality functionality.
 - Notifications are simulated and stored in the notification log; real SMS/e-mail gateway integration is outside the supplied scope.
 - Requirement IDs supplied by the section authors are fixed and must not be renumbered during integration.
 - Referenced business rules (BR-01 to BR-08) and design-specification identifiers (DS-*) must be resolved against the canonical baseline and SAD before the SRS is approved.
@@ -580,7 +580,7 @@ BMS-SR-005 in the source said parameterized queries prevent SQL injection and XS
 BMS-NF-004 requires at least 90% success and a study with at least five users. Define a sample-size/pass-count rule that makes the 90% threshold objectively verifiable.
 
 ### OI-12 - Business scope consistency
-Keep ATM functionality out of scope. Preserve the no-real-SMS/e-mail-gateway scope and verify roles and account-status permissions across SRS, SAD, Test Plan and backlog.
+Keep automated teller machine functionality functionality out of scope. Preserve the no-real-SMS/e-mail-gateway scope and verify roles and account-status permissions across SRS, SAD, Test Plan and backlog.
 
 ### Approval
 

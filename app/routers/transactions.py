@@ -17,11 +17,12 @@ from app.services import transaction_service as service
 
 router = APIRouter(tags=["transactions"])
 
-AccountNumber = Annotated[str, Field(pattern=r"^\d{10}$", description="10-digit account number")]
+AccountNumber = Annotated[str, Field(pattern=r"^[0-9]{10}$", description="10-digit ASCII account number")]
 Amount = Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=2)]
 
 
 class CashRequest(BaseModel):
+    model_config = {"extra": "forbid"}
     accountId: AccountNumber
     amount: Amount
 
@@ -47,6 +48,7 @@ def withdraw(body: CashRequest, user=Depends(require_roles(ROLE_TELLER)), db: Se
 
 
 class TransferRequest(BaseModel):
+    model_config = {"extra": "forbid"}
     fromAccount: AccountNumber
     toAccount: AccountNumber
     amount: Amount

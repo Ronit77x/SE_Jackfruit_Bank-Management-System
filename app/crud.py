@@ -187,7 +187,11 @@ def list_transactions(db: Session, account_id: int) -> list[Transaction]:
 def create_audit_log(
     db: Session, user_id: int | None, action: str, outcome: str, details: str = ""
 ) -> AuditLog:
-    """Never pass passwords or full account numbers in `details`."""
+    """Low-level helper: stores the row exactly as given, WITHOUT any sanitising.
+
+    Application code should call app.services.audit_service.log_event instead, which validates the outcome and
+    removes passwords. Never pass passwords or full account numbers in `details`.
+    """
     entry = AuditLog(user_id=user_id, action=action, outcome=outcome, details=details)
     db.add(entry)
     db.commit()

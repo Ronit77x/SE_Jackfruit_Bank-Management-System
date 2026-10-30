@@ -1,14 +1,14 @@
 
-"""Authentication endpoints for US-01 and related authentication stories."""
+"""Authentication endpoints for login, logout, and account lockout."""
 
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.constants import USER_ACTIVE, USER_LOCKED
+from app.constants import MAX_FAILED_LOGINS, ROLE_ADMIN, USER_ACTIVE, USER_LOCKED
 from app.database import get_db
 from app.models import User
 from app.security import verify_password
@@ -16,8 +16,6 @@ from app.services.audit_service import log_event
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# Temporary in-memory sessions. These are lost when the server restarts.
-# A persistent session store can be introduced in a later change.
 _sessions: dict[str, dict] = {}
 SESSION_LIFETIME = timedelta(minutes=10)
 
@@ -31,6 +29,10 @@ class LoginResponse(BaseModel):
     token: str
     role: str
     mustChangePassword: bool
+
+
+class UnlockRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=60)
 
 
 def _remove_expired_sessions() -> None:
@@ -48,33 +50,35 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     username = payload.username.strip()
     user = db.query(User).filter(User.username == username).first()
 
-    # Keep the same error for unknown usernames and incorrect passwords.
-    if user is None or not verify_password(payload.password, user.password_hash):
-        log_event(
-            db,
-            user.id if user else None,
-            "LOGIN",
-            "FAILURE",
-            "Invalid credentials",
-        )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
-        )
+    if user is None:
+        log_event(db, None, "LOGIN", "FAILURE", "Invalid credentials")
+        raise HTTPException(status_code=401, detail="Invalid username or password")
 
     if user.status == USER_LOCKED:
         log_event(db, user.id, "LOGIN", "DENIED", "Account locked")
-        raise HTTPException(
-            status_code=status.HTTP_423_LOCKED,
-            detail="Account is locked",
-        )
+        raise HTTPException(status_code=423, detail="Account is locked")
 
     if user.status != USER_ACTIVE:
         log_event(db, user.id, "LOGIN", "DENIED", "Account inactive")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is inactive",
-        )
+        raise HTTPException(status_code=403, detail="Account is inactive")
+
+    if not verify_password(payload.password, user.password_hash):
+        user.failed_attempts += 1
+
+        if user.failed_attempts >= MAX_FAILED_LOGINS:
+            user.status = USER_LOCKED
+            log_event(
+                db, user.id, "ACCOUNT_LOCKOUT", "SUCCESS",
+                "Account locked after consecutive failed login attempts",
+            )
+        else:
+            log_event(db, user.id, "LOGIN", "FAILURE", "Invalid credentials")
+
+        db.commit()
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    user.failed_attempts = 0
+    db.commit()
 
     _remove_expired_sessions()
     token = secrets.token_urlsafe(32)
@@ -92,14 +96,11 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     )
 
 
-
 @router.post("/logout")
-def logout(
-    authorization: str | None = Header(default=None),
-):
+def logout(authorization: str | None = Header(default=None)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=401,
             detail="Authentication required",
             headers={"WWW-Authenticate": "Bearer"},
         )
@@ -108,10 +109,49 @@ def logout(
 
     if token not in _sessions:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=401,
             detail="Invalid or expired session",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     _sessions.pop(token, None)
     return {"message": "Logged out"}
+
+
+def get_admin_user(
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    from fastapi import HTTPException
+    from app.deps import get_current_user, require_roles
+
+    user = get_current_user(authorization=authorization, db=db)
+    checker = require_roles(ROLE_ADMIN)
+    return checker(user)
+
+
+@router.post("/unlock")
+def unlock_account(
+    payload: UnlockRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    username = payload.username.strip()
+    user = db.query(User).filter(User.username == username).first()
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.status != USER_LOCKED:
+        raise HTTPException(status_code=409, detail="Account is not locked")
+
+    user.status = USER_ACTIVE
+    user.failed_attempts = 0
+    db.commit()
+
+    log_event(
+        db, admin.id, "ACCOUNT_UNLOCK", "SUCCESS",
+        f"Administrator unlocked account for user ID {user.id}",
+    )
+
+    return {"message": "Account unlocked"}

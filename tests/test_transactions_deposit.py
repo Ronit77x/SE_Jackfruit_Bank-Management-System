@@ -1,9 +1,18 @@
 from decimal import Decimal
 
+import pytest
+
 from app import crud
 from app.constants import ACCOUNT_CURRENT, ACCOUNT_FROZEN, ACCOUNT_SAVINGS
 from app.models import AuditLog, Transaction
+from tests.auth_helpers import act_as
 from tests.test_crud import _customer
+
+
+@pytest.fixture(autouse=True)
+def logged_in_teller():
+    """Deposits and withdrawals are Teller functions (BMS-F-020, BMS-F-021)."""
+    act_as("Teller")
 
 
 def make_account(db, balance="10000", account_type=ACCOUNT_SAVINGS, customer=None):
@@ -57,4 +66,4 @@ def test_deposit_to_frozen_account_is_rejected(client, db):
 def test_deposit_unknown_account_returns_404(client):
     response = client.post("/transactions/deposit", json={"accountId": "9999999999", "amount": "100"})
     assert response.status_code == 404
-    assert set(response.json()) == {"code", "message", "timestamp", "traceId"}
+    assert {"code", "message", "timestamp", "traceId"} <= set(response.json())

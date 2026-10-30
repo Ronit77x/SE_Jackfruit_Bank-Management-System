@@ -1,7 +1,7 @@
-
 """Authentication endpoints for login, logout, and account lockout."""
 
 import secrets
+import threading
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException
@@ -11,13 +11,27 @@ from sqlalchemy.orm import Session
 from app.constants import MAX_FAILED_LOGINS, ROLE_ADMIN, USER_ACTIVE, USER_LOCKED
 from app.database import get_db
 from app.models import User
-from app.security import verify_password
+from app.deps import require_roles
+from app.security import hash_password, verify_password
 from app.services.audit_service import log_event
+from app.sessions import _sessions
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-_sessions: dict[str, dict] = {}
 SESSION_LIFETIME = timedelta(minutes=10)
+
+# Login attempts are processed one at a time. Without this, a burst of parallel wrong passwords all read
+# "0 failed attempts" and the account never locks (BR-07).
+_login_lock = threading.Lock()
+_dummy_hash: str | None = None
+
+
+def _burn_time(password: str) -> None:
+    """Spend the time of a real password check so unknown users are not noticeably faster."""
+    global _dummy_hash
+    if _dummy_hash is None:
+        _dummy_hash = hash_password("dummy-password-for-timing")
+    verify_password(password, _dummy_hash)
 
 
 class LoginRequest(BaseModel):
@@ -48,52 +62,60 @@ def _remove_expired_sessions() -> None:
 @router.post("/login", response_model=LoginResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     username = payload.username.strip()
-    user = db.query(User).filter(User.username == username).first()
+    with _login_lock:
+        user = db.query(User).filter(User.username == username).first()
 
-    if user is None:
-        log_event(db, None, "LOGIN", "FAILURE", "Invalid credentials")
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        if user is None:
+            _burn_time(payload.password)
+            log_event(db, None, "LOGIN", "FAILURE", "Invalid credentials")
+            raise HTTPException(status_code=401, detail="Invalid username or password")
 
-    if user.status == USER_LOCKED:
-        log_event(db, user.id, "LOGIN", "DENIED", "Account locked")
-        raise HTTPException(status_code=423, detail="Account is locked")
+        password_ok = verify_password(payload.password, user.password_hash)
 
-    if user.status != USER_ACTIVE:
-        log_event(db, user.id, "LOGIN", "DENIED", "Account inactive")
-        raise HTTPException(status_code=403, detail="Account is inactive")
-
-    if not verify_password(payload.password, user.password_hash):
-        user.failed_attempts += 1
-
-        if user.failed_attempts >= MAX_FAILED_LOGINS:
-            user.status = USER_LOCKED
-            log_event(
-                db, user.id, "ACCOUNT_LOCKOUT", "SUCCESS",
-                "Account locked after consecutive failed login attempts",
-            )
-        else:
+        # The status of an account (locked, inactive) is revealed only to someone who knows the password.
+        if user.status == USER_LOCKED:
+            if password_ok:
+                log_event(db, user.id, "LOGIN", "DENIED", "Account locked")
+                raise HTTPException(status_code=423, detail="Account is locked")
             log_event(db, user.id, "LOGIN", "FAILURE", "Invalid credentials")
+            raise HTTPException(status_code=401, detail="Invalid username or password")
 
+        if user.status != USER_ACTIVE:
+            log_event(db, user.id, "LOGIN", "DENIED", "Account inactive")
+            raise HTTPException(status_code=401, detail="Invalid username or password")
+
+        if not password_ok:
+            user.failed_attempts += 1
+
+            if user.failed_attempts >= MAX_FAILED_LOGINS:
+                user.status = USER_LOCKED
+                log_event(
+                    db, user.id, "ACCOUNT_LOCKOUT", "SUCCESS",
+                    "Account locked after consecutive failed login attempts",
+                )
+            else:
+                log_event(db, user.id, "LOGIN", "FAILURE", "Invalid credentials")
+
+            db.commit()
+            raise HTTPException(status_code=401, detail="Invalid username or password")
+
+        user.failed_attempts = 0
         db.commit()
-        raise HTTPException(status_code=401, detail="Invalid username or password")
 
-    user.failed_attempts = 0
-    db.commit()
+        _remove_expired_sessions()
+        token = secrets.token_urlsafe(32)
+        _sessions[token] = {
+            "user_id": user.id,
+            "expires_at": datetime.now(timezone.utc) + SESSION_LIFETIME,
+        }
 
-    _remove_expired_sessions()
-    token = secrets.token_urlsafe(32)
-    _sessions[token] = {
-        "user_id": user.id,
-        "expires_at": datetime.now(timezone.utc) + SESSION_LIFETIME,
-    }
+        log_event(db, user.id, "LOGIN", "SUCCESS", "Login successful")
 
-    log_event(db, user.id, "LOGIN", "SUCCESS", "Login successful")
-
-    return LoginResponse(
-        token=token,
-        role=user.role,
-        mustChangePassword=user.must_change_password,
-    )
+        return LoginResponse(
+            token=token,
+            role=user.role,
+            mustChangePassword=user.must_change_password,
+        )
 
 
 @router.post("/logout")
@@ -118,23 +140,11 @@ def logout(authorization: str | None = Header(default=None)):
     return {"message": "Logged out"}
 
 
-def get_admin_user(
-    authorization: str | None = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    from fastapi import HTTPException
-    from app.deps import get_current_user, require_roles
-
-    user = get_current_user(authorization=authorization, db=db)
-    checker = require_roles(ROLE_ADMIN)
-    return checker(user)
-
-
 @router.post("/unlock")
 def unlock_account(
     payload: UnlockRequest,
     db: Session = Depends(get_db),
-    admin: User = Depends(get_admin_user),
+    admin: User = Depends(require_roles(ROLE_ADMIN)),
 ):
     username = payload.username.strip()
     user = db.query(User).filter(User.username == username).first()

@@ -1,6 +1,4 @@
-
 """Shared authentication and role-check dependencies."""
-
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, Header, HTTPException, status
@@ -9,7 +7,8 @@ from sqlalchemy.orm import Session
 from app.constants import SESSION_IDLE_MINUTES
 from app.database import get_db
 from app.models import User
-from app.routers.auth import _sessions
+from app.services.audit_service import log_event
+from app.sessions import _sessions
 
 
 def get_current_user(
@@ -68,10 +67,29 @@ def get_current_user(
 
 
 def require_roles(*allowed_roles: str):
-    """Allow access only when the authenticated user has an allowed role."""
+    """Allow access only when the authenticated user has an allowed role.
 
-    def checker(user=Depends(get_current_user)):
+    - 403 (and an ACCESS_DENIED audit event) when the role is not allowed.
+    - 403 for a user who still has a temporary password (BMS-F-004): such a user may only change the password.
+    """
+
+    def checker(user=Depends(get_current_user), db: Session = Depends(get_db)):
+        if getattr(user, "must_change_password", False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You must change your temporary password first",
+            )
         if user.role not in allowed_roles:
+            try:
+                log_event(
+                    db,
+                    getattr(user, "id", None),
+                    "ACCESS_DENIED",
+                    "DENIED",
+                    f"role {user.role} tried an action that needs: {', '.join(allowed_roles)}",
+                )
+            except Exception:  # the 403 must be returned even if auditing fails
+                db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions",

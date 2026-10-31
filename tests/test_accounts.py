@@ -254,4 +254,4 @@ def test_non_customer_cannot_view_accounts(client):
     finally:
         client.app.dependency_overrides.pop(get_current_user, None)
 
-    assert response.status_code == 401
+    assert response.status_code == 403

@@ -1,3 +1,4 @@
+
 from datetime import date
 from decimal import Decimal
 from typing import Annotated
@@ -103,7 +104,7 @@ def get_my_accounts(
 
     if user.role != ROLE_CUSTOMER or user.customer_id is None:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Authenticated customer required.",
         )
 

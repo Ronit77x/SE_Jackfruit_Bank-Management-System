@@ -68,7 +68,7 @@ def write_observation(output_path: Path, observation: dict[str, object]) -> None
         **observation,
     }
     with output_path.open("a", newline="", encoding="utf-8") as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=CSV_FIELDS)
+        writer = csv.DictWriter(csv_file, fieldnames=CSV_FIELDS, lineterminator="\n")
         if needs_header:
             writer.writeheader()
         writer.writerow(row)

@@ -44,4 +44,4 @@ Never commit directly to `main`. Never force-push.
 
 Activate the virtual environment before running tests.
 Run `pytest` from the repository root to execute all tests.
-Run `pytest tests/test_accounts.py -v` to run account tests only.
+Run `pytest tests/test_factories.py -v` to run factory tests only.

@@ -1,5 +1,6 @@
 """Reusable factories for test customers, users, and accounts."""
 
+import secrets
 from datetime import date
 from decimal import Decimal
 
@@ -33,11 +34,16 @@ def create_customer(db, **overrides):
 
 
 def create_user(db, customer=None, **overrides):
-    """Create and return a sample customer login."""
+    """Create and return a sample user with a linked customer by default."""
+    role = overrides.get("role", ROLE_CUSTOMER)
+
+    if customer is None and role == ROLE_CUSTOMER and "customer_id" not in overrides:
+        customer = create_customer(db)
+
     data = {
-        "username": str(customer.id) if customer else "testuser",
+        "username": f"testuser_{secrets.token_hex(8)}",
         "password_hash": hash_password("TestPassword123!"),
-        "role": ROLE_CUSTOMER,
+        "role": role,
         "status": USER_ACTIVE,
         "must_change_password": False,
         "customer_id": customer.id if customer else None,
@@ -52,12 +58,23 @@ def create_user(db, customer=None, **overrides):
 
 
 def create_account(db, customer=None, **overrides):
-    """Create and return a sample savings account."""
+    """Create and return a sample savings account with a unique number."""
     if customer is None:
         customer = create_customer(db)
 
+    account_number = overrides.get("account_number")
+    if account_number is None:
+        while True:
+            candidate = str(secrets.randbelow(9_000_000_000) + 1_000_000_000)
+            exists = db.query(Account).filter_by(
+                account_number=candidate
+            ).first()
+            if exists is None:
+                account_number = candidate
+                break
+
     data = {
-        "account_number": "1000000001",
+        "account_number": account_number,
         "customer_id": customer.id,
         "type": ACCOUNT_SAVINGS,
         "balance": Decimal("1500.00"),

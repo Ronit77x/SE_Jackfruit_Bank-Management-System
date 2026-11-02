@@ -1,9 +1,11 @@
-from app.constants import ROLE_TELLER, USER_ACTIVE, USER_INACTIVE, USER_LOCKED
+from app.constants import ROLE_ADMIN, ROLE_TELLER, USER_ACTIVE, USER_INACTIVE, USER_LOCKED
 from app.models import AuditLog, User
 from app.security import verify_password
+from tests.auth_helpers import act_as
 
 
 def test_admin_can_create_teller_with_hashed_password(client, db):
+    act_as(ROLE_ADMIN)
     response = client.post("/admin/users", json={"username": "teller1", "password": "Initial1-secret"})
 
     assert response.status_code == 201
@@ -20,6 +22,7 @@ def test_admin_can_create_teller_with_hashed_password(client, db):
 
 
 def test_admin_can_deactivate_teller_and_audits_change(client, db):
+    act_as(ROLE_ADMIN)
     user = User(username="teller1", password_hash="hash", role=ROLE_TELLER, status=USER_ACTIVE)
     db.add(user)
     db.commit()
@@ -35,6 +38,7 @@ def test_admin_can_deactivate_teller_and_audits_change(client, db):
 
 
 def test_admin_can_unlock_teller_and_resets_failures(client, db):
+    act_as(ROLE_ADMIN)
     user = User(
         username="teller1", password_hash="hash", role=ROLE_TELLER,
         status=USER_LOCKED, failed_attempts=3,
@@ -52,6 +56,7 @@ def test_admin_can_unlock_teller_and_resets_failures(client, db):
 
 
 def test_admin_rejects_invalid_action_and_missing_user_without_audit(client, db):
+    act_as(ROLE_ADMIN)
     user = User(username="teller1", password_hash="hash", role=ROLE_TELLER)
     db.add(user)
     db.commit()
@@ -66,6 +71,7 @@ def test_admin_rejects_invalid_action_and_missing_user_without_audit(client, db)
 
 
 def test_admin_cannot_create_duplicate_username(client, db):
+    act_as(ROLE_ADMIN)
     db.add(User(username="teller1", password_hash="hash", role=ROLE_TELLER))
     db.commit()
 
@@ -76,6 +82,7 @@ def test_admin_cannot_create_duplicate_username(client, db):
 
 
 def test_admin_cannot_unlock_active_or_inactive_teller(client, db):
+    act_as(ROLE_ADMIN)
     for state in (USER_ACTIVE, USER_INACTIVE):
         user = User(username=f"teller-{state}", password_hash="hash", role=ROLE_TELLER, status=state)
         db.add(user)
@@ -89,7 +96,27 @@ def test_admin_cannot_unlock_active_or_inactive_teller(client, db):
 
 
 def test_admin_rejects_weak_initial_passwords(client, db):
+    act_as(ROLE_ADMIN)
     for password in ("a", "alllowercase", "ALLUPPERCASE", "NoDigits!"):
         response = client.post("/admin/users", json={"username": f"weak-{len(password)}", "password": password})
-        assert response.status_code == 422
+        assert response.status_code == 400
     assert db.query(User).count() == 0
+
+
+def test_admin_endpoints_require_login(client):
+    create = client.post("/admin/users", json={"username": "teller1", "password": "Initial1-secret"})
+    update = client.patch("/admin/users/1", json={"action": "deactivate"})
+
+    assert create.status_code == 401
+    assert update.status_code == 401
+
+
+def test_non_admin_cannot_manage_tellers_and_is_audited(client, db):
+    act_as(ROLE_TELLER)
+
+    response = client.post("/admin/users", json={"username": "teller1", "password": "Initial1-secret"})
+
+    assert response.status_code == 403
+    audit = db.query(AuditLog).one()
+    assert audit.action == "ACCESS_DENIED"
+    assert audit.outcome == "DENIED"

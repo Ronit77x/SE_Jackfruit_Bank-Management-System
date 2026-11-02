@@ -11,11 +11,13 @@ from app import models  # noqa: F401  (makes sure all tables are registered)
 from app.database import Base, engine
 from app.errors import register_error_handlers
 from app.routers import accounts, admin, auth, transactions
+from app.services.audit_triggers import install_audit_triggers
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    install_audit_triggers(engine)
     yield
 
 

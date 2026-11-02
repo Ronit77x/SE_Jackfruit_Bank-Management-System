@@ -25,6 +25,7 @@ def _body(code: str, message: str) -> dict:
     return {
         "code": code,
         "message": message,
+        "detail": message,  # same text, so clients and tests that expect FastAPI's usual `detail` keep working
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "traceId": uuid.uuid4().hex,
     }

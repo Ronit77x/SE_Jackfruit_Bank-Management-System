@@ -1,9 +1,18 @@
 from decimal import Decimal
 
+import pytest
+
 from app import crud
 from app.constants import ACCOUNT_CURRENT, ACCOUNT_FROZEN, ACCOUNT_SAVINGS
 from app.models import AuditLog, Transaction
+from tests.auth_helpers import act_as
 from tests.test_crud import _customer
+
+
+@pytest.fixture(autouse=True)
+def logged_in_teller():
+    """Deposits and withdrawals are Teller functions (BMS-F-020, BMS-F-021)."""
+    act_as("Teller")
 
 
 def make_account(db, balance="10000", account_type=ACCOUNT_SAVINGS, customer=None):

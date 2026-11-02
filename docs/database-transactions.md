@@ -29,6 +29,10 @@ and `tests/test_transactions_audit.py`.
 
 Two requests that arrive at the same time could both read the same balance and both succeed (a "lost update"). To prevent this, `deposit`, `withdraw` and `transfer` run one at a time using a lock (`_money_lock`). This is enough while the application runs as a single process on SQLite. With several server processes or another database (for example PostgreSQL) the lock must be replaced by row locks (`SELECT ... FOR UPDATE`). Tests: `tests/test_transactions_concurrency.py`.
 
+## Daily withdrawal limit
+
+The limit of BR-02 counts withdrawals made since midnight **India Standard Time** (UTC+05:30, no daylight saving) and is checked inside the same lock and transaction as the withdrawal. Tests: `tests/test_transactions_daily_limit.py`.
+
 ## The helpers in `app/crud.py`
 
-Each helper commits immediately, so they are for single, independent changes. Never build a money movement out of several `crud` calls: a failure between two calls would leave half of it saved. Transactions and audit logs are append-only, so `crud` has create and read helpers for them but no update or delete.
+Each helper commits immediately, so they are for single, independent changes. Never build a money movement out of several `crud` calls: a failure between two calls would leave half of it saved. Transactions and audit logs are append-only, so `crud` has create and read helpers for them but no update or delete. `crud.create_audit_log` does not sanitise its input; application code should use `audit_service.log_event`.

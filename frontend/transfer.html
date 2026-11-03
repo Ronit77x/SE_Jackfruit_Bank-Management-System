@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transfer Money — Bank Management System</title>
+  <style>
+    :root {
+      --primary: #1e40af;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --success: #059669;
+      --success-light: #ecfdf5;
+      --danger: #dc2626;
+      --danger-light: #fef2f2;
+      --warning: #d97706;
+      --warning-light: #fffbeb;
+      --neutral-50: #f8fafc;
+      --neutral-100: #f1f5f9;
+      --neutral-200: #e2e8f0;
+      --neutral-300: #cbd5e1;
+      --neutral-600: #475569;
+      --neutral-700: #334155;
+      --neutral-800: #1e293b;
+      --neutral-900: #0f172a;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --radius: 8px;
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--neutral-50);
+      color: var(--neutral-800);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation Header */
+    header {
+      background-color: #ffffff;
+      border-bottom: 1px solid var(--neutral-200);
+      padding: 0.875rem 1.25rem;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .header-content {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      font-weight: 700;
+      font-size: 1.125rem;
+      color: var(--primary);
+    }
+
+    .brand svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .user-session-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.625rem;
+      border-radius: 9999px;
+      font-weight: 500;
+      font-size: 0.75rem;
+    }
+
+    .badge-info {
+      background-color: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .badge-warning {
+      background-color: var(--warning-light);
+      color: var(--warning);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 680px;
+      width: 100%;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .page-title-area {
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--neutral-900);
+      margin-bottom: 0.375rem;
+    }
+
+    .page-subtitle {
+      color: var(--neutral-600);
+      font-size: 0.95rem;
+    }
+
+    /* Card Layout */
+    .card {
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Step Indicators */
+    .steps-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.75rem;
+      gap: 0.5rem;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--neutral-600);
+    }
+
+    .step-item.active {
+      color: var(--primary);
+    }
+
+    .step-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+      background: var(--neutral-200);
+      color: var(--neutral-700);
+    }
+
+    .step-item.active .step-number {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .step-divider {
+      width: 32px;
+      height: 2px;
+      background: var(--neutral-200);
+    }
+
+    /* Form Groups */
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--neutral-700);
+      margin-bottom: 0.375rem;
+    }
+
+    .form-helper {
+      font-size: 0.8rem;
+      color: var(--neutral-600);
+      margin-top: 0.25rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      font-size: 1rem;
+      font-family: inherit;
+      color: var(--neutral-900);
+      background-color: #ffffff;
+      border: 1px solid var(--neutral-300);
+      border-radius: var(--radius);
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
+    }
+
+    .form-control.error {
+      border-color: var(--danger);
+      background-color: #fffbfa;
+    }
+
+    .input-group {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-prefix {
+      position: absolute;
+      left: 0.875rem;
+      font-weight: 600;
+      color: var(--neutral-600);
+      pointer-events: none;
+    }
+
+    .input-group .form-control {
+      padding-left: 2rem;
+    }
+
+    /* Quick Amount Buttons */
+    .quick-amounts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .btn-chip {
+      background: var(--neutral-100);
+      border: 1px solid var(--neutral-200);
+      border-radius: 9999px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--neutral-700);
+      transition: all 0.15s ease;
+    }
+
+    .btn-chip:hover {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Available Balance Pill */
+    .balance-pill {
+      background-color: var(--primary-light);
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius);
+      padding: 0.625rem 0.875rem;
+      margin-top: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.875rem;
+    }
+
+    .balance-pill .balance-val {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 1rem;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background-color 0.15s ease, opacity 0.15s ease;
+      width: 100%;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background-color: var(--neutral-100);
+      color: var(--neutral-700);
+      border: 1px solid var(--neutral-300);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background-color: var(--neutral-200);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 0.875rem 1rem;
+      border-radius: var(--radius);
+      margin-bottom: 1.25rem;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.625rem;
+      line-height: 1.4;
+    }
+
+    .alert-danger {
+      background-color: var(--danger-light);
+      color: var(--danger);
+      border: 1px solid #fecaca;
+    }
+
+    .alert-success {
+      background-color: var(--success-light);
+      color: var(--success);
+      border: 1px solid #a7f3d0;
+    }
+
+    .alert-warning {
+      background-color: var(--warning-light);
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    /* Review Summary Grid */
+    .summary-list {
+      background: var(--neutral-50);
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin: 1rem 0;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--neutral-200);
+      font-size: 0.925rem;
+    }
+
+    .summary-row:last-child {
+      border-bottom: none;
+      padding-top: 0.75rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .summary-label {
+      color: var(--neutral-600);
+    }
+
+    .summary-val {
+      font-weight: 600;
+      color: var(--neutral-900);
+      text-align: right;
+    }
+
+    /* Success / Receipt Screen */
+    .receipt-card {
+      text-align: center;
+    }
+
+    .receipt-icon {
+      width: 56px;
+      height: 56px;
+      background: var(--success-light);
+      color: var(--success);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    .receipt-icon svg {
+      width: 32px;
+      height: 32px;
+      fill: currentColor;
+    }
+
+    /* Demo Login Drawer (collapsible for testing) */
+    .demo-bar {
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .demo-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+      .card {
+        padding: 1.25rem;
+      }
+      .page-title {
+        font-size: 1.5rem;
+      }
+      .btn-group {
+        flex-direction: column-reverse;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header>
+    <div class="header-content">
+      <div class="brand">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 1L3 5v2h18V5L12 1zm-7 8v8H3V9h2zm4 0v8H7V9h2zm4 0v8h-2V9h2zm4 0v8h-2V9h2zm4 0v8h-2V9h2zM2 19v2h20v-2H2z"/>
+        </svg>
+        <span>Jackfruit Bank</span>
+      </div>
+      <div class="user-session-bar" id="sessionStatusArea">
+        <span class="badge badge-warning" id="authBadge">Not Logged In</span>
+        <button class="btn-chip" id="authToggleBtn" onclick="toggleAuthModal()">Log In</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Demo / Test-Session Setup Bar -->
+    <div class="demo-bar" id="authSection" style="display: none;">
+      <div>
+        <strong>Session Login (Test / Demo)</strong>
+        <div style="color: var(--neutral-600); font-size: 0.75rem;">Uses standard <code>POST /auth/login</code></div>
+      </div>
+      <div class="demo-controls">
+        <input type="text" id="loginUsername" placeholder="Customer username" class="form-control" style="width: 140px; padding: 0.35rem 0.5rem; font-size: 0.8rem;">
+        <input type="password" id="loginPassword" placeholder="Password" class="form-control" style="width: 120px; padding: 0.35rem 0.5rem; font-size: 0.8rem;">
+        <button type="button" class="btn-chip" style="background: var(--primary); color: #fff;" onclick="doLogin()">Sign In</button>
+      </div>
+    </div>
+
+    <!-- Page Title -->
+    <div class="page-title-area">
+      <h1 class="page-title">Transfer Money</h1>
+      <p class="page-subtitle">Send money securely to any Jackfruit Bank account in seconds.</p>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="steps-indicator" aria-label="Transfer steps">
+      <div class="step-item active" id="stepIndicator1">
+        <span class="step-number">1</span>
+        <span>Enter Details</span>
+      </div>
+      <div class="step-divider"></div>
+      <div class="step-item" id="stepIndicator2">
+        <span class="step-number">2</span>
+        <span>Review</span>
+      </div>
+      <div class="step-divider"></div>
+      <div class="step-item" id="stepIndicator3">
+        <span class="step-number">3</span>
+        <span>Receipt</span>
+      </div>
+    </div>
+
+    <!-- Alert / Message Area -->
+    <div id="globalAlert" style="display: none;" role="alert"></div>
+
+    <!-- STEP 1: Enter Transfer Details -->
+    <div class="card" id="stepDetails">
+      <form id="transferForm" onsubmit="event.preventDefault(); proceedToReview();">
+
+        <!-- Source Account Selection -->
+        <div class="form-group">
+          <label for="fromAccountSelect" class="form-label">Transfer From (Your Account)</label>
+          <select id="fromAccountSelect" class="form-control" required onchange="onSourceAccountChange()">
+            <option value="">Loading your accounts...</option>
+          </select>
+          <div class="form-helper" id="fromAccountHelp">Select the account you want to send money from.</div>
+
+          <!-- Live Available Balance Pill -->
+          <div class="balance-pill" id="balanceDisplay" style="display: none;">
+            <div>
+              <span id="accountTypeDisplay">Savings Account</span>
+              <div style="font-size: 0.75rem; color: var(--neutral-600);" id="minBalanceHelp">Minimum balance required: ₹1,000.00</div>
+            </div>
+            <div class="balance-val" id="accountBalanceDisplay">₹0.00</div>
+          </div>
+        </div>
+
+        <!-- Destination Account -->
+        <div class="form-group">
+          <label for="toAccountInput" class="form-label">Transfer To (Recipient Account Number)</label>
+          <input
+            type="text"
+            id="toAccountInput"
+            class="form-control"
+            placeholder="Enter 10-digit account number (e.g. 1000000002)"
+            maxlength="10"
+            inputmode="numeric"
+            pattern="[0-9]{10}"
+            required
+            oninput="validateDestinationAccount()"
+          >
+          <div class="form-helper" id="toAccountHelp">Enter the exact 10-digit destination account number.</div>
+          <div id="toAccountError" style="color: var(--danger); font-size: 0.8rem; margin-top: 0.25rem; display: none;"></div>
+        </div>
+
+        <!-- Transfer Amount -->
+        <div class="form-group">
+          <label for="amountInput" class="form-label">Transfer Amount (INR)</label>
+          <div class="input-group">
+            <span class="input-prefix">₹</span>
+            <input
+              type="number"
+              id="amountInput"
+              class="form-control"
+              placeholder="0.00"
+              step="0.01"
+              min="1"
+              max="100000"
+              required
+              oninput="validateAmount()"
+            >
+          </div>
+          <div class="quick-amounts">
+            <span style="font-size: 0.75rem; color: var(--neutral-600); align-self: center;">Quick pick:</span>
+            <button type="button" class="btn-chip" onclick="setQuickAmount(500)">₹500</button>
+            <button type="button" class="btn-chip" onclick="setQuickAmount(1000)">₹1,000</button>
+            <button type="button" class="btn-chip" onclick="setQuickAmount(2000)">₹2,000</button>
+            <button type="button" class="btn-chip" onclick="setQuickAmount(5000)">₹5,000</button>
+          </div>
+          <div class="form-helper" id="amountHelp">Limit: ₹1,00,000 per transaction. Fee: ₹0 (Free transfer).</div>
+          <div id="amountError" style="color: var(--danger); font-size: 0.8rem; margin-top: 0.25rem; display: none;"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="btnReview">Review Transfer Details →</button>
+      </form>
+    </div>
+
+    <!-- STEP 2: Review & Confirmation -->
+    <div class="card" id="stepReview" style="display: none;">
+      <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 0.5rem;">Review Transfer</h2>
+      <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: 1rem;">
+        Please verify the recipient and transfer amount before confirming. Money will be sent immediately.
+      </p>
+
+      <div class="summary-list">
+        <div class="summary-row">
+          <span class="summary-label">From Account</span>
+          <span class="summary-val" id="reviewFromAccount">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">To Account Number</span>
+          <span class="summary-val" id="reviewToAccount">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Transfer Amount</span>
+          <span class="summary-val" id="reviewAmount" style="color: var(--primary);">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Transfer Fee</span>
+          <span class="summary-val" style="color: var(--success);">₹0.00 (Free)</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Total to Deduct</span>
+          <span class="summary-val" id="reviewTotal">—</span>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button type="button" class="btn btn-secondary" onclick="backToEdit()">← Back to Edit</button>
+        <button type="button" class="btn btn-primary" id="btnConfirmSend" onclick="executeTransfer()">Confirm &amp; Send Transfer</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Transfer Receipt & Status -->
+    <div class="card receipt-card" id="stepResult" style="display: none;">
+      <div id="successContent" style="display: none;">
+        <div class="receipt-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+        </div>
+        <h2 style="font-size: 1.35rem; font-weight: 700; color: var(--success); margin-bottom: 0.25rem;">Transfer Successful!</h2>
+        <p style="color: var(--neutral-600); font-size: 0.9rem; margin-bottom: 1.25rem;">Your fund transfer has been processed immediately.</p>
+
+        <div class="summary-list" style="text-align: left;">
+          <div class="summary-row">
+            <span class="summary-label">Receipt / Reference No.</span>
+            <span class="summary-val" id="receiptReference" style="font-family: monospace; font-size: 0.95rem;">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Amount Transferred</span>
+            <span class="summary-val" id="receiptAmount" style="color: var(--success);">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Sent To Account</span>
+            <span class="summary-val" id="receiptToAccount">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Updated Source Balance</span>
+            <span class="summary-val" id="receiptNewBalance">—</span>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button type="button" class="btn btn-secondary" onclick="window.print()">Print Receipt</button>
+          <button type="button" class="btn btn-primary" onclick="resetFormForNewTransfer()">Make Another Transfer</button>
+        </div>
+      </div>
+
+      <div id="failureContent" style="display: none;">
+        <div class="receipt-icon" style="background: var(--danger-light); color: var(--danger);">
+          <svg viewBox="0 0 24 24">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </div>
+        <h2 style="font-size: 1.35rem; font-weight: 700; color: var(--danger); margin-bottom: 0.25rem;">Transfer Failed</h2>
+        <p id="failureMessage" style="color: var(--neutral-700); font-size: 0.95rem; margin-bottom: 1.25rem;"></p>
+
+        <div class="btn-group">
+          <button type="button" class="btn btn-primary" onclick="backToEdit()">← Back and Correct Details</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // State
+    let authToken = sessionStorage.getItem("bms_auth_token") || "";
+    let customerAccounts = [];
+    let currentTransferData = null;
+
+    // Minimum balance limits from BR-01
+    const MIN_BALANCE = {
+      "Savings": 1000.0,
+      "Current": 5000.0
+    };
+    const MAX_TRANSFER_LIMIT = 100000.0;
+
+    // On Load
+    document.addEventListener("DOMContentLoaded", () => {
+      updateAuthUI();
+      if (authToken) {
+        loadCustomerAccounts();
+      } else {
+        // Show demo login drawer if not logged in
+        document.getElementById("authSection").style.display = "flex";
+        showAlert("Please log in with your customer account to view your accounts and transfer money.", "warning");
+      }
+    });
+
+    function toggleAuthModal() {
+      const area = document.getElementById("authSection");
+      area.style.display = area.style.display === "none" ? "flex" : "none";
+    }
+
+    function updateAuthUI() {
+      const badge = document.getElementById("authBadge");
+      const btn = document.getElementById("authToggleBtn");
+      if (authToken) {
+        badge.className = "badge badge-info";
+        badge.textContent = "Customer Session Active";
+        btn.textContent = "Log Out";
+        btn.onclick = doLogout;
+      } else {
+        badge.className = "badge badge-warning";
+        badge.textContent = "Not Logged In";
+        btn.textContent = "Log In";
+        btn.onclick = toggleAuthModal;
+      }
+    }
+
+    async function doLogin() {
+      const usernameInput = document.getElementById("loginUsername").value.trim();
+      const passwordInput = document.getElementById("loginPassword").value;
+
+      if (!usernameInput || !passwordInput) {
+        showAlert("Please enter your customer username and password.", "danger");
+        return;
+      }
+
+      try {
+        const res = await fetch("/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: usernameInput, password: passwordInput })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.token) {
+          authToken = data.token;
+          sessionStorage.setItem("bms_auth_token", authToken);
+          document.getElementById("authSection").style.display = "none";
+          hideAlert();
+          updateAuthUI();
+          loadCustomerAccounts();
+        } else {
+          showAlert(data.message || data.detail || "Invalid login credentials. Please check your username and password.", "danger");
+        }
+      } catch (err) {
+        showAlert("Unable to connect to the authentication service. Please check your connection.", "danger");
+      }
+    }
+
+    function doLogout() {
+      authToken = "";
+      sessionStorage.removeItem("bms_auth_token");
+      customerAccounts = [];
+      updateAuthUI();
+      const select = document.getElementById("fromAccountSelect");
+      select.innerHTML = '<option value="">Please log in to view accounts</option>';
+      document.getElementById("balanceDisplay").style.display = "none";
+      showAlert("You have logged out.", "info");
+      document.getElementById("authSection").style.display = "flex";
+    }
+
+    // Load Customer Accounts via GET /accounts/me
+    async function loadCustomerAccounts() {
+      const select = document.getElementById("fromAccountSelect");
+      select.innerHTML = '<option value="">Loading accounts...</option>';
+
+      try {
+        const res = await fetch("/accounts/me", {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          doLogout();
+          showAlert("Your session has expired. Please log in again.", "warning");
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error("Failed to load accounts");
+        }
+
+        customerAccounts = await res.json();
+
+        if (!customerAccounts || customerAccounts.length === 0) {
+          select.innerHTML = '<option value="">No bank accounts found</option>';
+          showAlert("You do not have any active bank accounts with Jackfruit Bank.", "warning");
+          return;
+        }
+
+        select.innerHTML = '<option value="">-- Choose source account --</option>';
+        customerAccounts.forEach(acc => {
+          const opt = document.createElement("option");
+          opt.value = acc.accountNumber;
+          const statusTag = acc.status !== "Active" ? ` (${acc.status})` : "";
+          opt.textContent = `${acc.type} — ${acc.maskedAccountNumber}${statusTag} (₹${parseFloat(acc.balance).toLocaleString('en-IN', {minimumFractionDigits: 2})})`;
+          select.appendChild(opt);
+        });
+
+        // Automatically select first account if only one exists
+        if (customerAccounts.length === 1) {
+          select.selectedIndex = 1;
+          onSourceAccountChange();
+        }
+
+      } catch (err) {
+        select.innerHTML = '<option value="">Error loading accounts</option>';
+        showAlert("Could not load your accounts. Please verify your connection and refresh.", "danger");
+      }
+    }
+
+    function onSourceAccountChange() {
+      const select = document.getElementById("fromAccountSelect");
+      const selectedAccNo = select.value;
+      const acc = customerAccounts.find(a => a.accountNumber === selectedAccNo);
+      const display = document.getElementById("balanceDisplay");
+
+      if (acc) {
+        display.style.display = "flex";
+        document.getElementById("accountTypeDisplay").textContent = `${acc.type} Account (${acc.maskedAccountNumber})`;
+        document.getElementById("accountBalanceDisplay").textContent = `₹${parseFloat(acc.balance).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        const minReq = MIN_BALANCE[acc.type] || 0;
+        document.getElementById("minBalanceHelp").textContent = `Minimum balance required to maintain: ₹${minReq.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      } else {
+        display.style.display = "none";
+      }
+
+      validateDestinationAccount();
+      validateAmount();
+    }
+
+    function setQuickAmount(val) {
+      document.getElementById("amountInput").value = val.toFixed(2);
+      validateAmount();
+    }
+
+    function validateDestinationAccount() {
+      const toAcc = document.getElementById("toAccountInput").value.trim();
+      const fromAcc = document.getElementById("fromAccountSelect").value;
+      const errEl = document.getElementById("toAccountError");
+      const input = document.getElementById("toAccountInput");
+
+      errEl.style.display = "none";
+      input.classList.remove("error");
+
+      if (!toAcc) return false;
+
+      if (!/^\d{1,10}$/.test(toAcc)) {
+        errEl.textContent = "Account number must contain only numbers.";
+        errEl.style.display = "block";
+        input.classList.add("error");
+        return false;
+      }
+
+      if (toAcc.length === 10 && fromAcc && toAcc === fromAcc) {
+        errEl.textContent = "Destination account cannot be the same as your source account.";
+        errEl.style.display = "block";
+        input.classList.add("error");
+        return false;
+      }
+
+      if (toAcc.length > 0 && toAcc.length < 10) {
+        errEl.textContent = `Please enter all 10 digits (${toAcc.length}/10 entered).`;
+        errEl.style.display = "block";
+        return false;
+      }
+
+      return true;
+    }
+
+    function validateAmount() {
+      const amountVal = parseFloat(document.getElementById("amountInput").value);
+      const errEl = document.getElementById("amountError");
+      const input = document.getElementById("amountInput");
+      const fromAccNo = document.getElementById("fromAccountSelect").value;
+      const acc = customerAccounts.find(a => a.accountNumber === fromAccNo);
+
+      errEl.style.display = "none";
+      input.classList.remove("error");
+
+      if (isNaN(amountVal) || amountVal <= 0) {
+        return false;
+      }
+
+      if (amountVal > MAX_TRANSFER_LIMIT) {
+        errEl.textContent = `Amount exceeds the single transfer limit of ₹${MAX_TRANSFER_LIMIT.toLocaleString('en-IN')}.`;
+        errEl.style.display = "block";
+        input.classList.add("error");
+        return false;
+      }
+
+      if (acc) {
+        const currentBal = parseFloat(acc.balance);
+        const minReq = MIN_BALANCE[acc.type] || 0;
+        if (currentBal - amountVal < minReq) {
+          errEl.textContent = `Insufficient funds: balance after transfer (₹${(currentBal - amountVal).toFixed(2)}) would fall below required minimum of ₹${minReq.toFixed(2)}.`;
+          errEl.style.display = "block";
+          input.classList.add("error");
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    // Step Transition: Proceed to Review
+    function proceedToReview() {
+      hideAlert();
+
+      if (!authToken) {
+        showAlert("Please log in before transferring funds.", "warning");
+        document.getElementById("authSection").style.display = "flex";
+        return;
+      }
+
+      const fromAccNo = document.getElementById("fromAccountSelect").value;
+      const toAccNo = document.getElementById("toAccountInput").value.trim();
+      const amount = parseFloat(document.getElementById("amountInput").value);
+
+      if (!fromAccNo) {
+        showAlert("Please select a source account.", "danger");
+        return;
+      }
+
+      if (!validateDestinationAccount() || toAccNo.length !== 10) {
+        showAlert("Please enter a valid 10-digit recipient account number.", "danger");
+        return;
+      }
+
+      if (!validateAmount() || isNaN(amount) || amount <= 0) {
+        showAlert("Please enter a valid transfer amount.", "danger");
+        return;
+      }
+
+      const sourceAcc = customerAccounts.find(a => a.accountNumber === fromAccNo);
+
+      currentTransferData = {
+        fromAccount: fromAccNo,
+        toAccount: toAccNo,
+        amount: amount.toFixed(2),
+        sourceAccObj: sourceAcc
+      };
+
+      // Populate Review Screen
+      document.getElementById("reviewFromAccount").textContent = `${sourceAcc.type} (${sourceAcc.maskedAccountNumber})`;
+      document.getElementById("reviewToAccount").textContent = toAccNo;
+      document.getElementById("reviewAmount").textContent = `₹${parseFloat(amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      document.getElementById("reviewTotal").textContent = `₹${parseFloat(amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+      // Switch view
+      document.getElementById("stepDetails").style.display = "none";
+      document.getElementById("stepReview").style.display = "block";
+      document.getElementById("stepResult").style.display = "none";
+
+      setStepActive(2);
+    }
+
+    function backToEdit() {
+      hideAlert();
+      document.getElementById("stepDetails").style.display = "block";
+      document.getElementById("stepReview").style.display = "none";
+      document.getElementById("stepResult").style.display = "none";
+      setStepActive(1);
+    }
+
+    // Execute Transfer: POST /transactions/transfer
+    async function executeTransfer() {
+      if (!currentTransferData || !authToken) return;
+
+      const btn = document.getElementById("btnConfirmSend");
+      btn.disabled = true;
+      btn.textContent = "Processing transfer...";
+
+      try {
+        const response = await fetch("/transactions/transfer", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            fromAccount: currentTransferData.fromAccount,
+            toAccount: currentTransferData.toAccount,
+            amount: currentTransferData.amount
+          })
+        });
+
+        const data = await response.json();
+
+        // Show Result Screen
+        document.getElementById("stepDetails").style.display = "none";
+        document.getElementById("stepReview").style.display = "none";
+        document.getElementById("stepResult").style.display = "block";
+        setStepActive(3);
+
+        if (response.ok && (response.status === 200 || response.status === 201)) {
+          // Success
+          document.getElementById("successContent").style.display = "block";
+          document.getElementById("failureContent").style.display = "none";
+
+          document.getElementById("receiptReference").textContent = data.reference || `TXN-${data.transactionId}`;
+          document.getElementById("receiptAmount").textContent = `₹${parseFloat(currentTransferData.amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+          document.getElementById("receiptToAccount").textContent = currentTransferData.toAccount;
+          document.getElementById("receiptNewBalance").textContent = `₹${parseFloat(data.balance).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+          // Refresh source accounts in background to update balances
+          loadCustomerAccounts();
+        } else {
+          // Failure
+          document.getElementById("successContent").style.display = "none";
+          document.getElementById("failureContent").style.display = "block";
+
+          let friendlyMsg = "The transfer could not be completed.";
+          if (data.code === "ACCOUNT_NOT_FOUND") {
+            friendlyMsg = "The recipient account was not found. Please double-check the 10-digit account number.";
+          } else if (data.code === "ACCOUNT_NOT_ACTIVE") {
+            friendlyMsg = "The recipient or source account is currently frozen or closed and cannot complete transactions.";
+          } else if (data.code === "INSUFFICIENT_FUNDS") {
+            friendlyMsg = "Insufficient funds in your account to complete this transfer and maintain the minimum balance.";
+          } else if (data.code === "TRANSFER_LIMIT_EXCEEDED") {
+            friendlyMsg = "The transfer amount exceeds the single transaction limit of ₹1,00,000.";
+          } else if (data.message || data.detail) {
+            friendlyMsg = data.message || data.detail;
+          }
+
+          document.getElementById("failureMessage").textContent = friendlyMsg;
+        }
+
+      } catch (err) {
+        document.getElementById("stepDetails").style.display = "none";
+        document.getElementById("stepReview").style.display = "none";
+        document.getElementById("stepResult").style.display = "block";
+        setStepActive(3);
+
+        document.getElementById("successContent").style.display = "none";
+        document.getElementById("failureContent").style.display = "block";
+        document.getElementById("failureMessage").textContent = "Unable to connect to the bank server. Please verify your connection and try again.";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Confirm & Send Transfer";
+      }
+    }
+
+    function resetFormForNewTransfer() {
+      document.getElementById("toAccountInput").value = "";
+      document.getElementById("amountInput").value = "";
+      document.getElementById("successContent").style.display = "none";
+      document.getElementById("failureContent").style.display = "none";
+      backToEdit();
+    }
+
+    function setStepActive(stepNum) {
+      document.getElementById("stepIndicator1").className = stepNum >= 1 ? "step-item active" : "step-item";
+      document.getElementById("stepIndicator2").className = stepNum >= 2 ? "step-item active" : "step-item";
+      document.getElementById("stepIndicator3").className = stepNum >= 3 ? "step-item active" : "step-item";
+    }
+
+    function showAlert(msg, type = "danger") {
+      const alert = document.getElementById("globalAlert");
+      alert.className = `alert alert-${type}`;
+      alert.textContent = msg;
+      alert.style.display = "block";
+    }
+
+    function hideAlert() {
+      document.getElementById("globalAlert").style.display = "none";
+    }
+  </script>
+</body>
+</html>

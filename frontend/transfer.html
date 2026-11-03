@@ -247,6 +247,18 @@
       padding-left: 2rem;
     }
 
+    /* Cross-browser input[type=number] styling (Firefox & WebKit/Blink) */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type="number"] {
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+
     /* Quick Amount Buttons */
     .quick-amounts {
       display: flex;
@@ -449,16 +461,114 @@
       flex-wrap: wrap;
     }
 
-    /* Responsive adjustments */
+    .demo-input {
+      width: 140px;
+      padding: 0.35rem 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    /* Responsive adjustments for mobile and 360px viewport (BMS-NF-006, TC-UX-02) */
     @media (max-width: 480px) {
+      main {
+        margin: 1.25rem auto;
+        padding: 0 0.75rem;
+      }
       .card {
-        padding: 1.25rem;
+        padding: 1.125rem;
       }
       .page-title {
-        font-size: 1.5rem;
+        font-size: 1.35rem;
+      }
+      .page-subtitle {
+        font-size: 0.85rem;
+      }
+      .steps-indicator {
+        gap: 0.25rem;
+        margin-bottom: 1.25rem;
+      }
+      .step-item {
+        font-size: 0.75rem;
+        gap: 0.25rem;
+      }
+      .step-number {
+        width: 22px;
+        height: 22px;
+        font-size: 0.75rem;
+      }
+      .step-divider {
+        width: 14px;
       }
       .btn-group {
         flex-direction: column-reverse;
+      }
+      .btn-chip {
+        min-height: 36px;
+      }
+      .demo-bar {
+        padding: 0.625rem 0.75rem;
+      }
+      .demo-controls {
+        width: 100%;
+      }
+      .demo-input {
+        width: 100%;
+        flex: 1 1 120px;
+      }
+      .summary-list {
+        padding: 0.875rem;
+      }
+      .summary-row {
+        font-size: 0.875rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+      }
+      .summary-row:last-child {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .summary-val {
+        text-align: left;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .header-content {
+        justify-content: center;
+      }
+      .user-session-bar {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .step-item span:not(.step-number) {
+        font-size: 0.7rem;
+      }
+      .step-divider {
+        width: 10px;
+      }
+      .btn-chip {
+        padding: 0.35rem 0.6rem;
+      }
+    }
+
+    /* Print styles: Clean receipt-only printout */
+    @media print {
+      header, .demo-bar, .steps-indicator, .page-title-area, .btn-group, #globalAlert {
+        display: none !important;
+      }
+      body {
+        background: #ffffff;
+      }
+      .card {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+      }
+      main {
+        margin: 0;
+        max-width: 100%;
+        padding: 0;
       }
     }
   </style>
@@ -489,8 +599,8 @@
         <div style="color: var(--neutral-600); font-size: 0.75rem;">Uses standard <code>POST /auth/login</code></div>
       </div>
       <div class="demo-controls">
-        <input type="text" id="loginUsername" placeholder="Customer username" class="form-control" style="width: 140px; padding: 0.35rem 0.5rem; font-size: 0.8rem;">
-        <input type="password" id="loginPassword" placeholder="Password" class="form-control" style="width: 120px; padding: 0.35rem 0.5rem; font-size: 0.8rem;">
+        <input type="text" id="loginUsername" placeholder="Customer username" class="form-control demo-input">
+        <input type="password" id="loginPassword" placeholder="Password" class="form-control demo-input">
         <button type="button" class="btn-chip" style="background: var(--primary); color: #fff;" onclick="doLogin()">Sign In</button>
       </div>
     </div>

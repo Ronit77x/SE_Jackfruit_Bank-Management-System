@@ -9,6 +9,8 @@ htmlcov/
 
 # Local data and secrets
 *.db
+*.db-wal
+*.db-shm
 *.sqlite3
 .env
 
@@ -21,3 +23,4 @@ Thumbs.db
 # Word / Office temporary lock files
 ~$*
 *.tmp
+

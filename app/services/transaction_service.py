@@ -3,10 +3,12 @@
 Owner: Member 3 (Ronit). Every function changes balances and writes its transaction rows in ONE
 database transaction: it either commits completely or rolls back completely.
 """
+import csv
 import functools
+import io
 import threading
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -14,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from app import constants as c
 from app.errors import AppError
-from app.models import Account, AuditLog, Transaction
+from app.models import Account, AuditLog, Notification, Transaction
 from app.services.audit_service import log_event
 
 
@@ -90,6 +92,40 @@ def _record(db: Session, account: Account, txn_type: str, amount: Decimal, refer
     return txn
 
 
+# ---------------------------------------------------------------------------------------------------------------
+# Notifications (BMS-F-033): a simulated e-mail/SMS record for every debit and every credit.
+# ---------------------------------------------------------------------------------------------------------------
+_CREDIT_TYPES = (c.TXN_DEPOSIT, c.TXN_OPENING_DEPOSIT, c.TXN_TRANSFER_IN)
+_NOTIFICATION_LABELS = {
+    c.TXN_DEPOSIT: "Deposit",
+    c.TXN_OPENING_DEPOSIT: "Opening deposit",
+    c.TXN_WITHDRAWAL: "Withdrawal",
+    c.TXN_TRANSFER_OUT: "Transfer sent",
+    c.TXN_TRANSFER_IN: "Transfer received",
+}
+
+
+def _rupees(value) -> str:
+    return f"Rs {Decimal(value):,.2f}"
+
+
+def add_transaction_notification(db: Session, account: Account, txn_type: str, amount: Decimal) -> Notification:
+    """Adds the notification record to the CURRENT database transaction (no commit).
+
+    Call it after the balance of `account` has been changed, so the message shows the new balance. Because it is
+    committed together with the money movement, a notification exists exactly when the movement happened.
+    Also used for the opening deposit of a new account. Only the masked account number is written (BMS-SR-007).
+    """
+    direction = "to" if txn_type in _CREDIT_TYPES else "from"
+    message = (
+        f"{_NOTIFICATION_LABELS[txn_type]} of {_rupees(amount)} {direction} account "
+        f"{mask_account_number(account.account_number)}. New balance: {_rupees(account.balance)}."
+    )
+    notification = Notification(customer_id=account.customer_id, message=message, status=c.NOTIFICATION_LOGGED)
+    db.add(notification)
+    return notification
+
+
 @_serialized
 def deposit(db: Session, account_number: str, amount: Decimal, user_id: int | None) -> Transaction:
     """BMS-F-020: amount > 0 and <= DEPOSIT_LIMIT, account must be Active."""
@@ -102,6 +138,7 @@ def deposit(db: Session, account_number: str, amount: Decimal, user_id: int | No
         _require_active(account)
         account.balance = account.balance + amount
         txn = _record(db, account, c.TXN_DEPOSIT, amount, receipt=_new_receipt())
+        add_transaction_notification(db, account, c.TXN_DEPOSIT, amount)
         _audit(db, user_id, "DEPOSIT", "SUCCESS", f"{mask_account_number(account_number)} amount {amount}")
         db.commit()
     except AppError as exc:
@@ -158,6 +195,7 @@ def withdraw(db: Session, account_number: str, amount: Decimal, user_id: int | N
             )
         account.balance = account.balance - amount
         txn = _record(db, account, c.TXN_WITHDRAWAL, amount, receipt=_new_receipt())
+        add_transaction_notification(db, account, c.TXN_WITHDRAWAL, amount)
         _audit(db, user_id, "WITHDRAWAL", "SUCCESS", f"{mask_account_number(account_number)} amount {amount}")
         db.commit()
     except AppError as exc:
@@ -214,8 +252,10 @@ def transfer(
         reference = "TRF-" + uuid.uuid4().hex[:12].upper()
         source.balance = source.balance - amount
         debit = _record(db, source, c.TXN_TRANSFER_OUT, amount, reference=reference)
+        add_transaction_notification(db, source, c.TXN_TRANSFER_OUT, amount)
         _credit(destination, amount)
         _record(db, destination, c.TXN_TRANSFER_IN, amount, reference=reference)
+        add_transaction_notification(db, destination, c.TXN_TRANSFER_IN, amount)
         _audit(
             db,
             user_id,

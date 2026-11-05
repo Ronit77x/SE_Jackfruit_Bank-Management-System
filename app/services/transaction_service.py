@@ -126,6 +126,98 @@ def add_transaction_notification(db: Session, account: Account, txn_type: str, a
     return notification
 
 
+# ---------------------------------------------------------------------------------------------------------------
+# Transaction history (BMS-F-023) and statement (BMS-F-024). All dates are India Standard Time days.
+# ---------------------------------------------------------------------------------------------------------------
+MINI_STATEMENT_SIZE = 10
+HISTORY_LIMIT = 1000
+
+
+def bank_day_start_utc(day: date) -> datetime:
+    """Midnight at the start of `day` in India, in UTC (the timezone the database stores)."""
+    return datetime.combine(day, time.min, tzinfo=BANK_TIMEZONE).astimezone(timezone.utc)
+
+
+def to_bank_time(moment: datetime) -> datetime:
+    if moment.tzinfo is None:  # SQLite returns naive values that are UTC
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment.astimezone(BANK_TIMEZONE)
+
+
+def list_history(
+    db: Session,
+    account_number: str,
+    owner_customer_id: int | None,
+    enforce_owner: bool,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    newest_first: bool = True,
+):
+    """Returns (account, transactions, is_mini_statement).
+
+    Without dates: the latest 10 transactions (the mini-statement). With dates: every transaction from the start
+    of `date_from` to the end of `date_to` (both included, India time), at most HISTORY_LIMIT rows.
+    A Customer may only read their own accounts (403), an unknown account is 404, from > to is 400.
+    """
+    account = _get_account(db, account_number)
+    if enforce_owner and account.customer_id != owner_customer_id:
+        raise AppError(403, "FORBIDDEN", "You can only view your own accounts.")
+    if (date_from is None) != (date_to is None):
+        raise AppError(400, "INVALID_RANGE", "Give both a from date and a to date, or neither.")
+    if date_from and date_to and date_from > date_to:
+        raise AppError(400, "INVALID_RANGE", "The from date must not be after the to date.")
+
+    query = select(Transaction).where(Transaction.account_id == account.id)
+    mini = date_from is None
+    if not mini:
+        query = query.where(
+            Transaction.created_at >= bank_day_start_utc(date_from),
+            Transaction.created_at < bank_day_start_utc(date_to) + timedelta(days=1),
+        )
+    ordering = (Transaction.created_at.desc(), Transaction.id.desc()) if newest_first else (
+        Transaction.created_at.asc(), Transaction.id.asc()
+    )
+    rows = list(db.scalars(query.order_by(*ordering).limit(MINI_STATEMENT_SIZE if mini else HISTORY_LIMIT)))
+    return account, rows, mini
+
+
+def _csv_safe(text: str) -> str:
+    """Stops spreadsheet programs from running a cell that starts with = + - or @ as a formula."""
+    return "'" + text if text[:1] in ("=", "+", "-", "@", "\t", "\r") else text
+
+
+def build_statement_csv(account: Account, rows: list[Transaction], date_from: date, date_to: date):
+    """Returns (csv_text, total_credits, total_debits). `rows` are written oldest first."""
+    out = io.StringIO()
+    writer = csv.writer(out, lineterminator="\r\n")
+    writer.writerow(["Bank Management System - Account statement"])
+    writer.writerow(["Account", mask_account_number(account.account_number)])
+    writer.writerow(["Period (India Standard Time)", f"{date_from.isoformat()} to {date_to.isoformat()}"])
+    writer.writerow([])
+    writer.writerow(["Date and time", "Type", "Credit (Rs)", "Debit (Rs)", "Balance after (Rs)", "Receipt or reference"])
+    credits = Decimal("0")
+    debits = Decimal("0")
+    for row in rows:
+        is_credit = row.type in _CREDIT_TYPES
+        credits += row.amount if is_credit else Decimal("0")
+        debits += Decimal("0") if is_credit else row.amount
+        writer.writerow(
+            [
+                to_bank_time(row.created_at).strftime("%Y-%m-%d %H:%M:%S"),
+                _csv_safe(row.type),
+                f"{row.amount:.2f}" if is_credit else "",
+                "" if is_credit else f"{row.amount:.2f}",
+                f"{row.balance_after:.2f}",
+                _csv_safe(row.receipt_no or row.reference or ""),
+            ]
+        )
+    writer.writerow([])
+    writer.writerow(["Number of transactions", len(rows)])
+    writer.writerow(["Total credits (Rs)", f"{credits:.2f}"])
+    writer.writerow(["Total debits (Rs)", f"{debits:.2f}"])
+    return out.getvalue(), credits, debits
+
+
 @_serialized
 def deposit(db: Session, account_number: str, amount: Decimal, user_id: int | None) -> Transaction:
     """BMS-F-020: amount > 0 and <= DEPOSIT_LIMIT, account must be Active."""

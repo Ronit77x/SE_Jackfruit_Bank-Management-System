@@ -335,3 +335,88 @@ def test_transfer_ui_fallback_if_file_missing(client, monkeypatch):
     response = client.get("/transfer")
     assert response.status_code == 404
     assert "Transfer UI not found" in response.text
+
+
+# ==================== E. LOGOUT & TC-UX-01 ALIGNMENT TESTS ====================
+
+def test_transfer_ui_logout_invalidates_server_session_and_rejects_subsequent_access(client, db):
+    """Calling POST /auth/logout removes session and subsequent /accounts/me calls return 401."""
+    customer = Customer(
+        name="Asha Rao",
+        date_of_birth=date(1990, 3, 14),
+        address="12 MG Road",
+        phone="9000000001",
+        email="asha@example.com",
+        id_proof_number="ID-PROOF-LOGOUT-01",
+    )
+    db.add(customer)
+    db.commit()
+    db.refresh(customer)
+
+    user = User(
+        username="asha_logout_user",
+        password_hash=hash_password("Passw0rd!123"),
+        role=ROLE_CUSTOMER,
+        status="Active",
+        customer_id=customer.id,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    token = "test_logout_flow_token"
+    now = datetime.now(timezone.utc)
+    _sessions[token] = {
+        "user_id": user.id,
+        "role": ROLE_CUSTOMER,
+        "expires_at": now + timedelta(minutes=10),
+        "last_activity": now,
+    }
+
+    try:
+        # Access succeeds before logout
+        res1 = client.get("/accounts/me", headers={"Authorization": f"Bearer {token}"})
+        assert res1.status_code == 200
+
+        # Perform backend logout
+        res_logout = client.post("/auth/logout", headers={"Authorization": f"Bearer {token}"})
+        assert res_logout.status_code == 200
+        assert res_logout.json() == {"message": "Logged out"}
+        assert token not in _sessions
+
+        # Subsequent access fails with 401
+        res2 = client.get("/accounts/me", headers={"Authorization": f"Bearer {token}"})
+        assert res2.status_code == 401
+        assert "Invalid or expired session" in res2.text
+    finally:
+        _sessions.pop(token, None)
+
+
+def test_transfer_ui_frontend_logout_and_tc_ux_01_script_contract():
+    """Verify frontend/transfer.html contains required backend logout flow and corrected placeholder."""
+    from app.routers.accounts import FRONTEND_TRANSFER_HTML
+    assert FRONTEND_TRANSFER_HTML.exists()
+    content = FRONTEND_TRANSFER_HTML.read_text(encoding="utf-8")
+
+    # Verified logout implementation
+    assert 'fetch("/auth/logout"' in content
+    assert '"Authorization": `Bearer ${tokenToSend}`' in content
+    assert 'sessionStorage.removeItem("bms_auth_token")' in content
+    assert 'isLoggingOut' in content
+    assert 'doLogout(true)' in content
+
+    # Verified TC-UX-01 placeholder
+    assert 'placeholder="Enter 10-digit account number (e.g. 1000000003)"' in content
+
+
+def test_tc_ux_01_documentation_references_ravi_account_1000000003():
+    """TC-UX-01 protocol must reference Customer 2 Ravi Kumar's account 1000000003."""
+    doc_path = Path(__file__).resolve().parent.parent / "docs" / "test-plan" / "TC-UX-01-usability-test-protocol.md"
+    assert doc_path.exists()
+    text = doc_path.read_text(encoding="utf-8")
+
+    assert "Customer 2 (**Ravi Kumar**, Account `1000000003`)" in text
+    assert "recipient account number 1000000003" in text
+    assert "Correct destination account (`1000000003`)" in text
+    # Ensure obsolete Asha account number 1000000002 is not referenced as destination
+    assert "recipient account number 1000000002" not in text

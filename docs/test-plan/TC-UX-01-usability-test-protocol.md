@@ -32,7 +32,7 @@ Verify that the customer-facing fund transfer interface is intuitive, transparen
   - Seeded database via `python -m scripts.seed`.
   - Participant is logged in as Customer 1 (**Asha Rao**, username `1`, demo password `Passw0rd!`), with accounts:
     - Savings Account `1000000001` (Balance: ₹10,000.00).
-  - Target destination account: Customer 2 (**Ravi Kumar**, Account `1000000002`).
+  - Target destination account: Customer 2 (**Ravi Kumar**, Account `1000000003`).
 
 ---
 
@@ -44,7 +44,7 @@ Verify that the customer-facing fund transfer interface is intuitive, transparen
    - Inform the participant that the session will be timed.
    - Open `http://127.0.0.1:8000/transfer` with Customer 1 session active.
 2. **Neutral Task Instruction (read verbatim):**
-   > *"You are an account holder at Jackfruit Bank. You have logged into your web banking portal. Please transfer ₹500 from your account to recipient account number 1000000002. You may begin now."*
+   > *"You are an account holder at Jackfruit Bank. You have logged into your web banking portal. Please transfer ₹500 from your account to recipient account number 1000000003. You may begin now."*
 3. **Observation Rules:**
    - The facilitator must remain silent and take observational notes.
    - **No assistance** may be provided during the attempt. If the participant asks for help, the facilitator responds: *"Please proceed as you think best."*
@@ -58,7 +58,7 @@ Verify that the customer-facing fund transfer interface is intuitive, transparen
 - **PASS:**
   - Completed transfer in $\le 120$ seconds (2 minutes).
   - Zero assistance provided (`Assistance Required = No`).
-  - Correct destination account (`1000000002`) and amount (`₹500.00`) transferred.
+  - Correct destination account (`1000000003`) and amount (`₹500.00`) transferred.
 - **FAIL:**
   - Elapsed time exceeds 120 seconds.
   - Participant requires assistance or abandons task.

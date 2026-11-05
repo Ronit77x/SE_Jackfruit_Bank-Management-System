@@ -661,7 +661,7 @@
             type="text"
             id="toAccountInput"
             class="form-control"
-            placeholder="Enter 10-digit account number (e.g. 1000000002)"
+            placeholder="Enter 10-digit account number (e.g. 1000000003)"
             maxlength="10"
             inputmode="numeric"
             pattern="[0-9]{10}"
@@ -870,16 +870,54 @@
       }
     }
 
-    function doLogout() {
+    let isLoggingOut = false;
+
+    async function doLogout(silent = false) {
+      if (isLoggingOut) return;
+      isLoggingOut = true;
+
+      const tokenToSend = authToken;
+
+      // Clear local session state immediately so client is never left locally authenticated
       authToken = "";
       sessionStorage.removeItem("bms_auth_token");
       customerAccounts = [];
+      currentTransferData = null;
+
+      if (tokenToSend) {
+        try {
+          await fetch("/auth/logout", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${tokenToSend}`
+            }
+          });
+        } catch (err) {
+          // Network errors still guarantee local session cleanup
+        }
+      }
+
       updateAuthUI();
       const select = document.getElementById("fromAccountSelect");
-      select.innerHTML = '<option value="">Please log in to view accounts</option>';
-      document.getElementById("balanceDisplay").style.display = "none";
-      showAlert("You have logged out.", "info");
-      document.getElementById("authSection").style.display = "flex";
+      if (select) {
+        select.innerHTML = '<option value="">Please log in to view accounts</option>';
+      }
+      const balanceDisplay = document.getElementById("balanceDisplay");
+      if (balanceDisplay) {
+        balanceDisplay.style.display = "none";
+      }
+
+      resetFormForNewTransfer();
+
+      if (!silent) {
+        showAlert("You have been logged out.", "info");
+      }
+      const authSection = document.getElementById("authSection");
+      if (authSection) {
+        authSection.style.display = "flex";
+      }
+
+      isLoggingOut = false;
     }
 
     // Load Customer Accounts via GET /accounts/me
@@ -893,7 +931,7 @@
         });
 
         if (res.status === 401 || res.status === 403) {
-          doLogout();
+          await doLogout(true);
           showAlert("Your session has expired. Please log in again.", "warning");
           return;
         }

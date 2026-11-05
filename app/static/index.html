@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bank Management System - Log in</title>
+  <link rel="stylesheet" href="/ui/css/style.css">
+</head>
+<body>
+  <header id="site-header" class="site"></header>
+  <main>
+    <section class="card" id="login-card">
+      <h2>Log in</h2>
+      <form id="login-form" autocomplete="off">
+        <label for="username">Username</label>
+        <input id="username" name="username" maxlength="60" required>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" maxlength="128" required autocomplete="current-password">
+        <button type="submit">Log in</button>
+      </form>
+      <div id="login-message" class="message" role="alert"></div>
+      <p class="muted">Customers log in with their customer ID. Staff use the username given by the bank.</p>
+    </section>
+  </main>
+  <script src="/ui/js/api.js"></script>
+  <script>
+    (function () {
+      var HOME = { Customer: "customer.html", Teller: "teller-accounts.html", Admin: "admin.html" };
+      var form = document.getElementById("login-form");
+      var message = document.getElementById("login-message");
+      bms.header("Log in");
+
+      if (new URLSearchParams(window.location.search).get("expired")) {
+        bms.show(message, "Your session has ended. Please log in again.", false);
+      }
+      if (bms.isLoggedIn()) {
+        var again = bms.el("p", "You are logged in as " + bms.username() + " (" + bms.role() + ").");
+        var go = bms.el("a", "Continue");
+        go.href = "/ui/" + (bms.mustChangePassword() ? "change-password.html" : HOME[bms.role()]);
+        again.appendChild(document.createTextNode(" "));
+        again.appendChild(go);
+        document.getElementById("login-card").appendChild(again);
+      }
+
+      form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        bms.hide(message);
+        try {
+          var result = await bms.login(form.username.value.trim(), form.password.value);
+          form.password.value = "";
+          window.location.href = "/ui/" + (result.mustChangePassword ? "change-password.html" : HOME[result.role]);
+        } catch (error) {
+          form.password.value = "";
+          bms.show(message, error.message, false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

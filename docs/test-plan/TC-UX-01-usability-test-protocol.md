@@ -6,6 +6,9 @@
 - **Component:** `DS-UI` (Customer Web Interface)
 - **Assigned Member:** Member 2 (Vijay Kumar)
 - **Sprint:** Sprint 2
+- **Protocol Status:** READY FOR EXECUTION (Empirical Validation Pending)
+- **Automated Contract Status:** PASS (Automated UI & API regression tests)
+- **Human Participant Status:** PENDING (Awaiting 5-user physical trial)
 
 ---
 
@@ -28,10 +31,21 @@ Verify that the customer-facing fund transfer interface is intuitive, transparen
 
 - **Platform:** Web browser (Chrome, Edge, or Firefox) at desktop or mobile resolution ($\ge 360\text{ px}$).
 - **URL:** `http://127.0.0.1:8000/transfer`
-- **Test Dataset:**
-  - Seeded database via `python -m scripts.seed`.
-  - Participant is logged in as Customer 1 (**Asha Rao**, username `1`, demo password `Passw0rd!`), with accounts:
-    - Savings Account `1000000001` (Balance: ₹10,000.00).
+- **Test Environment Preparation:**
+  1. Initialize fresh seed data:
+     ```powershell
+     python -m scripts.seed
+     ```
+  2. Launch development server:
+     ```powershell
+     uvicorn app.main:app --reload
+     ```
+  3. Ensure network accessibility and open `http://127.0.0.1:8000/transfer`.
+- **Test Dataset & Account State:**
+  - Participant logs in as Customer 1 (**Asha Rao**, username `1`, demo password `Passw0rd!`).
+  - Active source account: Savings Account `1000000001` (Balance: ₹10,000.00, Status: Active).
+  - Secondary source account: Current Account `1000000002` (Balance: ₹25,000.00, Status: Active).
+  - Source-account selector behavior: Only Active accounts remain enabled. Inactive, Frozen, or Closed accounts are disabled with descriptive status tags.
   - Target destination account: Customer 2 (**Ravi Kumar**, Account `1000000003`).
 
 ---
@@ -85,5 +99,6 @@ Verify that the customer-facing fund transfer interface is intuitive, transparen
 $$\text{Usability Pass Rate} = \left( \frac{\text{Number of Passing Participants}}{\text{Total Participants}} \right) \times 100\%$$
 
 - **Target:** $\ge 90\%$ (requires at least 5/5 passes for a 5-user trial).
-- **Final Result:** `[ Pending Trial Execution ]`
+- **Final Result:** `[ Pending Physical Trial Execution ]`
+- **Validation Note:** Under course software engineering standards, test results must reflect genuine human trials and must never be fabricated. Automated regression tests verify all UI, API, and error handling contracts, but BMS-NF-004 will remain marked as pending empirical completion until actual physical participant trials are conducted and signed off.
 - **Evaluator Signature:** Member 2 (Vijay Kumar) — `[ Pending ]`

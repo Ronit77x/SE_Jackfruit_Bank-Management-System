@@ -420,3 +420,151 @@ def test_tc_ux_01_documentation_references_ravi_account_1000000003():
     assert "Correct destination account (`1000000003`)" in text
     # Ensure obsolete Asha account number 1000000002 is not referenced as destination
     assert "recipient account number 1000000002" not in text
+
+
+# ==================== F. INELIGIBLE ACCOUNT & BACKEND VALIDATION TESTS ====================
+
+def test_transfer_ui_contract_disables_frozen_and_closed_source_accounts():
+    """transfer.html must disable ineligible source accounts and display warnings."""
+    from app.routers.accounts import FRONTEND_TRANSFER_HTML
+    assert FRONTEND_TRANSFER_HTML.exists()
+    content = FRONTEND_TRANSFER_HTML.read_text(encoding="utf-8")
+
+    # Options disabled for non-active accounts
+    assert 'opt.disabled = true;' in content
+    assert 'statusLabel = (acc.status === "Frozen" || acc.status === "Closed") ? acc.status :' in content
+    assert 'Cannot transfer' in content
+
+    # Explanatory helper and banner when accounts are ineligible
+    assert 'All your accounts are currently frozen or closed' in content
+    assert 'Frozen or closed accounts cannot initiate transfers' in content
+
+    # Live validation in amount checker and review screen guard
+    assert 'Selected account is ${acc.status} and cannot perform transfers.' in content
+    assert 'sourceAcc.status !== "Active"' in content
+
+
+def test_backend_transfer_validation_rejects_frozen_source_account(client, db, sample_data):
+    """Backend must reject transfer attempts from a Frozen source account with 409."""
+    a1 = sample_data["a1"]
+    a3 = sample_data["a3"]
+    a1.status = ACCOUNT_FROZEN
+    db.commit()
+
+    act_as(ROLE_CUSTOMER, user_id=1, customer_id=sample_data["c1"].id)
+    response = client.post(
+        "/transactions/transfer",
+        json={
+            "fromAccount": a1.account_number,
+            "toAccount": a3.account_number,
+            "amount": "500.00",
+        },
+    )
+    assert response.status_code == 409
+    assert response.json()["code"] == "ACCOUNT_NOT_ACTIVE"
+
+    # Balances must be untouched
+    db.refresh(a1)
+    db.refresh(a3)
+    assert a1.balance == Decimal("10000.00")
+    assert a3.balance == Decimal("5000.00")
+
+
+def test_backend_transfer_validation_rejects_closed_source_account(client, db, sample_data):
+    """Backend must reject transfer attempts from a Closed source account with 409."""
+    a1 = sample_data["a1"]
+    a3 = sample_data["a3"]
+    a1.status = ACCOUNT_CLOSED
+    db.commit()
+
+    act_as(ROLE_CUSTOMER, user_id=1, customer_id=sample_data["c1"].id)
+    response = client.post(
+        "/transactions/transfer",
+        json={
+            "fromAccount": a1.account_number,
+            "toAccount": a3.account_number,
+            "amount": "500.00",
+        },
+    )
+    assert response.status_code == 409
+    assert response.json()["code"] == "ACCOUNT_NOT_ACTIVE"
+
+    db.refresh(a1)
+    db.refresh(a3)
+    assert a1.balance == Decimal("10000.00")
+    assert a3.balance == Decimal("5000.00")
+
+
+def test_backend_transfer_validation_rejects_closed_or_frozen_destination_account(client, db, sample_data):
+    """Backend must reject transfer attempts to Frozen or Closed destination accounts with 409."""
+    a1 = sample_data["a1"]
+    a3 = sample_data["a3"]
+    act_as(ROLE_CUSTOMER, user_id=1, customer_id=sample_data["c1"].id)
+
+    # 1. Closed destination
+    a3.status = ACCOUNT_CLOSED
+    db.commit()
+    res_closed = client.post(
+        "/transactions/transfer",
+        json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "500.00"},
+    )
+    assert res_closed.status_code == 409
+    assert res_closed.json()["code"] == "ACCOUNT_NOT_ACTIVE"
+
+    # 2. Frozen destination
+    a3.status = ACCOUNT_FROZEN
+    db.commit()
+    res_frozen = client.post(
+        "/transactions/transfer",
+        json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "500.00"},
+    )
+    assert res_frozen.status_code == 409
+    assert res_frozen.json()["code"] == "ACCOUNT_NOT_ACTIVE"
+
+    db.refresh(a1)
+    db.refresh(a3)
+    assert a1.balance == Decimal("10000.00")
+
+
+def test_backend_transfer_validation_enforces_business_rules_independent_of_frontend(client, db, sample_data):
+    """Backend independently enforces ownership, self-transfer, daily limit, and minimum balance."""
+    a1 = sample_data["a1"]
+    a3 = sample_data["a3"]
+    act_as(ROLE_CUSTOMER, user_id=1, customer_id=sample_data["c1"].id)
+
+    # 1. Unowned source account -> 403 FORBIDDEN
+    res_unowned = client.post(
+        "/transactions/transfer",
+        json={"fromAccount": a3.account_number, "toAccount": a1.account_number, "amount": "100.00"},
+    )
+    assert res_unowned.status_code == 403
+    assert res_unowned.json()["code"] == "FORBIDDEN"
+
+    # 2. Self transfer (same source and destination) -> 400 INVALID_TRANSFER
+    res_same = client.post(
+        "/transactions/transfer",
+        json={"fromAccount": a1.account_number, "toAccount": a1.account_number, "amount": "100.00"},
+    )
+    assert res_same.status_code == 400
+    assert res_same.json()["code"] == "INVALID_TRANSFER"
+
+    # 3. Exceeds transfer limit (limit is 50,000) -> 422 TRANSFER_LIMIT_EXCEEDED
+    res_limit = client.post(
+        "/transactions/transfer",
+        json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "60000.00"},
+    )
+    assert res_limit.status_code == 422
+
+    # 4. Violates minimum balance (Savings requires 1,000 min balance; a1 has 10,000; transferring 9,500 leaves 500)
+    res_min_bal = client.post(
+        "/transactions/transfer",
+        json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "9500.00"},
+    )
+    assert res_min_bal.status_code == 422
+    assert res_min_bal.json()["code"] == "INSUFFICIENT_FUNDS"
+
+    # Ensure balances remain completely unchanged
+    db.refresh(a1)
+    db.refresh(a3)
+    assert a1.balance == Decimal("10000.00")
+    assert a3.balance == Decimal("5000.00")

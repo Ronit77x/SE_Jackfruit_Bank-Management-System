@@ -9,6 +9,7 @@ from fastapi import FastAPI
 
 from app import models  # noqa: F401  (makes sure all tables are registered)
 from app.database import Base, engine
+from app.errors import register_error_handlers
 from app.routers import accounts, admin, auth, transactions
 
 
@@ -19,6 +20,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Bank Management System", version="0.1.0", lifespan=lifespan)
+register_error_handlers(app)
 
 app.include_router(auth.router)
 app.include_router(accounts.router)

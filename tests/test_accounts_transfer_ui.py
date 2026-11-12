@@ -424,24 +424,29 @@ def test_tc_ux_01_documentation_references_ravi_account_1000000003():
 
 # ==================== F. INELIGIBLE ACCOUNT & BACKEND VALIDATION TESTS ====================
 
-def test_transfer_ui_contract_disables_frozen_and_closed_source_accounts():
-    """transfer.html must disable ineligible source accounts and display warnings."""
+def test_transfer_ui_contract_excludes_ineligible_source_accounts():
+    """transfer.html must exclude frozen, closed, and unknown-status accounts from the selector and explain why."""
     from app.routers.accounts import FRONTEND_TRANSFER_HTML
     assert FRONTEND_TRANSFER_HTML.exists()
     content = FRONTEND_TRANSFER_HTML.read_text(encoding="utf-8")
 
-    # Options disabled for non-active accounts
-    assert 'opt.disabled = true;' in content
-    assert 'statusLabel = (acc.status === "Frozen" || acc.status === "Closed") ? acc.status :' in content
-    assert 'Cannot transfer' in content
+    # Safe status helper & filtering out non-active accounts
+    assert 'function isEligibleStatus(status)' in content
+    assert 'typeof status === "string" && status.trim().toLowerCase() === "active";' in content
+    assert 'eligibleAccounts.forEach(acc => {' in content
+    assert 'No eligible active accounts available' in content
 
-    # Explanatory helper and banner when accounts are ineligible
-    assert 'All your accounts are currently frozen or closed' in content
-    assert 'Frozen or closed accounts cannot initiate transfers' in content
+    # Clear explanation using masked account numbers and safe fallback for unknown status
+    assert 'acc.maskedAccountNumber || ""' in content
+    assert '"Unknown status"' in content
+    assert 'Excluded unavailable accounts:' in content
+    assert 'No accounts can be used for transfers right now.' in content
 
-    # Live validation in amount checker and review screen guard
-    assert 'Selected account is ${acc.status} and cannot perform transfers.' in content
-    assert 'sourceAcc.status !== "Active"' in content
+    # Consistent helper reuse in display, amount validation, and review screen guard
+    assert 'const isEligible = isEligibleStatus(acc.status);' in content
+    assert 'if (!isEligibleStatus(acc.status))' in content
+    assert 'if (!sourceAcc || !isEligibleStatus(sourceAcc.status))' in content
+    assert 'Selected account is ${acc.status || "unavailable"} and cannot perform transfers.' in content
 
 
 def test_backend_transfer_validation_rejects_frozen_source_account(client, db, sample_data):
@@ -562,6 +567,67 @@ def test_backend_transfer_validation_enforces_business_rules_independent_of_fron
     )
     assert res_min_bal.status_code == 422
     assert res_min_bal.json()["code"] == "INSUFFICIENT_FUNDS"
+
+    # Ensure balances remain completely unchanged
+    db.refresh(a1)
+    db.refresh(a3)
+    assert a1.balance == Decimal("10000.00")
+    assert a3.balance == Decimal("5000.00")
+
+
+def test_backend_transfer_validation_enforces_auth_roles_and_input_rules(client, db, sample_data):
+    """Backend rejects unauthenticated, non-customer, temp-password, non-existent, and invalid-amount transfers."""
+    a1 = sample_data["a1"]
+    a3 = sample_data["a3"]
+
+    # 1. Unauthenticated -> 401
+    app_overrides_backup = dict(client.app.dependency_overrides)
+    client.app.dependency_overrides.clear()
+    try:
+        res_unauth = client.post(
+            "/transactions/transfer",
+            json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "100.00"},
+        )
+        assert res_unauth.status_code == 401
+    finally:
+        client.app.dependency_overrides.update(app_overrides_backup)
+
+    # 2. Teller / Admin -> 403
+    act_as(ROLE_TELLER, user_id=2)
+    res_teller = client.post(
+        "/transactions/transfer",
+        json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "100.00"},
+    )
+    assert res_teller.status_code == 403
+
+    # 3. Temporary password -> 403
+    act_as(ROLE_CUSTOMER, user_id=1, customer_id=sample_data["c1"].id, must_change_password=True)
+    res_temp = client.post(
+        "/transactions/transfer",
+        json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "100.00"},
+    )
+    assert res_temp.status_code == 403
+
+    # 4. Non-existent destination -> 404
+    act_as(ROLE_CUSTOMER, user_id=1, customer_id=sample_data["c1"].id)
+    res_not_found = client.post(
+        "/transactions/transfer",
+        json={"fromAccount": a1.account_number, "toAccount": "9999999999", "amount": "100.00"},
+    )
+    assert res_not_found.status_code == 404
+
+    # 5. Zero or negative amount -> 400
+    res_zero = client.post(
+        "/transactions/transfer",
+        json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "0.00"},
+    )
+    assert res_zero.status_code == 400
+
+    res_negative = client.post(
+        "/transactions/transfer",
+        json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "-100.00"},
+    )
+    assert res_negative.status_code == 400
 
     # Ensure balances remain completely unchanged
     db.refresh(a1)

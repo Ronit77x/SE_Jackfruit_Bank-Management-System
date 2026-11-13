@@ -920,6 +920,10 @@
       isLoggingOut = false;
     }
 
+    function isEligibleStatus(status) {
+      return typeof status === "string" && status.trim().toLowerCase() === "active";
+    }
+
     // Load Customer Accounts via GET /accounts/me
     async function loadCustomerAccounts() {
       const select = document.getElementById("fromAccountSelect");
@@ -948,18 +952,46 @@
           return;
         }
 
-        select.innerHTML = '<option value="">-- Choose source account --</option>';
-        customerAccounts.forEach(acc => {
-          const opt = document.createElement("option");
-          opt.value = acc.accountNumber;
-          const statusTag = acc.status !== "Active" ? ` (${acc.status})` : "";
-          opt.textContent = `${acc.type} — ${acc.maskedAccountNumber}${statusTag} (₹${parseFloat(acc.balance).toLocaleString('en-IN', {minimumFractionDigits: 2})})`;
-          select.appendChild(opt);
-        });
+        const eligibleAccounts = customerAccounts.filter(acc => acc && isEligibleStatus(acc.status));
+        const ineligibleAccounts = customerAccounts.filter(acc => !acc || !isEligibleStatus(acc.status));
 
-        // Automatically select first account if only one exists
-        if (customerAccounts.length === 1) {
-          select.selectedIndex = 1;
+        if (eligibleAccounts.length === 0) {
+          select.innerHTML = '<option value="">No eligible active accounts available</option>';
+        } else {
+          select.innerHTML = '<option value="">-- Choose source account --</option>';
+          eligibleAccounts.forEach(acc => {
+            const opt = document.createElement("option");
+            opt.value = acc.accountNumber;
+            opt.textContent = `${acc.type} — ${acc.maskedAccountNumber} (₹${parseFloat(acc.balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})})`;
+            select.appendChild(opt);
+          });
+        }
+
+        const ineligibleSummary = ineligibleAccounts
+          .filter(Boolean)
+          .map(acc => `${acc.type || "Account"} ${acc.maskedAccountNumber || ""} (${acc.status ? String(acc.status).trim() : "Unknown status"})`)
+          .join(", ");
+
+        const helpEl = document.getElementById("fromAccountHelp");
+        if (eligibleAccounts.length === 0) {
+          if (helpEl) {
+            helpEl.textContent = ineligibleSummary
+              ? `No accounts can be used for transfers right now. Excluded accounts: ${ineligibleSummary}.`
+              : "All your accounts are currently frozen, closed, or inactive. Fund transfers cannot be initiated.";
+            helpEl.style.color = "var(--danger)";
+          }
+          showAlert("You do not have any active accounts eligible for fund transfers. Frozen, closed, or inactive accounts cannot initiate transfers.", "warning");
+        } else if (ineligibleAccounts.length > 0 && helpEl) {
+          helpEl.textContent = `Excluded unavailable accounts: ${ineligibleSummary}. Only Active accounts can initiate transfers.`;
+          helpEl.style.color = "";
+        } else if (helpEl) {
+          helpEl.textContent = "Select the account you want to send money from.";
+          helpEl.style.color = "";
+        }
+
+        // Automatically select if exactly one eligible active account exists
+        if (eligibleAccounts.length === 1) {
+          select.value = eligibleAccounts[0].accountNumber;
           onSourceAccountChange();
         }
 
@@ -977,10 +1009,18 @@
 
       if (acc) {
         display.style.display = "flex";
-        document.getElementById("accountTypeDisplay").textContent = `${acc.type} Account (${acc.maskedAccountNumber})`;
-        document.getElementById("accountBalanceDisplay").textContent = `₹${parseFloat(acc.balance).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        const isEligible = isEligibleStatus(acc.status);
+        document.getElementById("accountTypeDisplay").textContent = `${acc.type} Account (${acc.maskedAccountNumber})${!isEligible ? ` — ${acc.status}` : ""}`;
+        document.getElementById("accountBalanceDisplay").textContent = `₹${parseFloat(acc.balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
         const minReq = MIN_BALANCE[acc.type] || 0;
-        document.getElementById("minBalanceHelp").textContent = `Minimum balance required to maintain: ₹${minReq.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        const minHelpEl = document.getElementById("minBalanceHelp");
+        if (!isEligible) {
+          minHelpEl.textContent = `Account status is ${acc.status}. Transactions cannot be performed from this account.`;
+          minHelpEl.style.color = "var(--danger)";
+        } else {
+          minHelpEl.textContent = `Minimum balance required to maintain: ₹${minReq.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+          minHelpEl.style.color = "";
+        }
       } else {
         display.style.display = "none";
       }
@@ -1050,6 +1090,12 @@
       }
 
       if (acc) {
+        if (!isEligibleStatus(acc.status)) {
+          errEl.textContent = `Selected account is ${acc.status || "unavailable"} and cannot perform transfers.`;
+          errEl.style.display = "block";
+          input.classList.add("error");
+          return false;
+        }
         const currentBal = parseFloat(acc.balance);
         const minReq = MIN_BALANCE[acc.type] || 0;
         if (currentBal - amountVal < minReq) {
@@ -1093,6 +1139,11 @@
       }
 
       const sourceAcc = customerAccounts.find(a => a.accountNumber === fromAccNo);
+      if (!sourceAcc || !isEligibleStatus(sourceAcc.status)) {
+        const statusText = sourceAcc && sourceAcc.status ? String(sourceAcc.status).trim().toLowerCase() : "unavailable";
+        showAlert("The selected source account is " + (sourceAcc ? statusText : "invalid") + " and cannot perform transfers.", "danger");
+        return;
+      }
 
       currentTransferData = {
         fromAccount: fromAccNo,

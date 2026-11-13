@@ -421,9 +421,6 @@ def test_tc_ux_01_documentation_references_ravi_account_1000000003():
     # Ensure obsolete Asha account number 1000000002 is not referenced as destination
     assert "recipient account number 1000000002" not in text
 
-
-# ==================== F. INELIGIBLE ACCOUNT & BACKEND VALIDATION TESTS ====================
-
 def test_transfer_ui_contract_excludes_ineligible_source_accounts():
     """transfer.html must exclude frozen, closed, and unknown-status accounts from the selector and explain why."""
     from app.routers.accounts import FRONTEND_TRANSFER_HTML
@@ -592,7 +589,7 @@ def test_backend_transfer_validation_enforces_auth_roles_and_input_rules(client,
     finally:
         client.app.dependency_overrides.update(app_overrides_backup)
 
-    # 2. Teller / Admin -> 403
+    # 2. Teller role -> 403
     act_as(ROLE_TELLER, user_id=2)
     res_teller = client.post(
         "/transactions/transfer",

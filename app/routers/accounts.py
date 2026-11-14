@@ -5,12 +5,16 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.constants import ACCOUNT_CURRENT, ACCOUNT_SAVINGS, ROLE_CUSTOMER
 from app.database import get_db
 from app.deps import require_roles
+from app.models import Account
 from app.services.account_service import open_account
+from app.security import mask_account_number
 
 router = APIRouter(tags=["accounts"])
 
@@ -75,3 +79,33 @@ def create_account(
         result.pop("temporary_password")
 
     return result
+
+
+@router.get("/accounts")
+def get_my_accounts(
+    db: Annotated[Session, Depends(get_db)],
+    user=Depends(require_roles(ROLE_CUSTOMER)),
+):
+    """Return the authenticated customer's account details and balances."""
+
+    if user.role != ROLE_CUSTOMER or user.customer_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Authenticated customer required.",
+        )
+
+    accounts = db.scalars(
+        select(Account).where(Account.customer_id == user.customer_id)
+    ).all()
+
+    return {
+        "accounts": [
+            {
+                "account_number": mask_account_number(account.account_number),
+                "account_type": account.type,
+                "balance": str(account.balance),
+                "status": account.status,
+            }
+            for account in accounts
+        ]
+    }

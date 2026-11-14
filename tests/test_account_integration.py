@@ -117,6 +117,35 @@ def test_open_account_rejects_other_authenticated_roles(client, db, role):
     assert db.query(AuditLog).filter_by(action="ACCESS_DENIED").count() == 1
 
 
+def test_real_customer_login_returns_only_owned_masked_accounts(client, db):
+    user = create_user(db)
+    own = create_account(db, customer=db.get(Customer, user.customer_id))
+    create_account(db)
+    response = client.get("/accounts", headers=login(client, user))
+    assert response.status_code == 200
+    assert response.json()["accounts"] == [{
+        "account_number": "******" + own.account_number[-4:],
+        "account_type": own.type, "balance": str(own.balance), "status": own.status,
+    }]
+
+
+def test_account_list_requires_login(client):
+    assert client.get("/accounts").status_code == 401
+
+
+@pytest.mark.parametrize("role", ["Teller", "Admin"])
+def test_account_list_rejects_wrong_role_with_real_login(client, db, role):
+    response = client.get("/accounts", headers=login(client, create_user(db, role=role)))
+    assert response.status_code == 403
+    assert db.query(AuditLog).filter_by(action="ACCESS_DENIED").count() == 1
+
+
+def test_temporary_password_customer_cannot_bypass_change_password_requirement(client, db):
+    user = create_user(db, must_change_password=True)
+    create_account(db, customer=db.get(Customer, user.customer_id))
+    assert client.get("/accounts", headers=login(client, user)).status_code == 403
+
+
 def test_existing_customer_audit_failure_does_not_leave_account_or_deposit(client, db):
     headers = teller_headers(client, db)
     existing = create_account(db)

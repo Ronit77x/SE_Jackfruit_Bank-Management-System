@@ -4,6 +4,10 @@ Run:   uvicorn app.main:app --reload     then open http://127.0.0.1:8000/docs
 Each member only edits their own router/service files (see DEVELOPMENT.md); this file rarely changes.
 """
 from contextlib import asynccontextmanager
+from pathlib import Path
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
+
 
 from fastapi import FastAPI
 
@@ -27,6 +31,12 @@ app.include_router(accounts.router)
 app.include_router(transactions.router)
 app.include_router(admin.router)
 
+app.mount("/ui", StaticFiles(directory=Path(__file__).parent / "static", html=True), name="ui")
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/ui/index.html")
 
 @app.get("/health", tags=["platform"])
 def health():

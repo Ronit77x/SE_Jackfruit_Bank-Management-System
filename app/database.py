@@ -3,14 +3,10 @@
 The database location can be changed with the BMS_DATABASE_URL environment variable.
 Default: a local SQLite file called bms.db (ignored by git).
 
-SQLite settings (measured, see docs/database-pool-experiment.md):
-- WAL journal mode: readers no longer block the single writer. This is what removed the HTTP 500 errors
-  ("QueuePool limit ... timed out") seen under 50 simultaneous users: without WAL, requests waited on each other
-  while holding their connections, until the pool ran dry.
-- busy_timeout / timeout of 30 s: wait for the single writer instead of failing at once with "database is locked".
-- Pool size: SQLAlchemy's default (5 + 10). A bigger pool did not help in the measurements, and it could not: SQLite
-  allows one writer at a time whatever the pool size. BMS_DB_POOL_SIZE and BMS_DB_MAX_OVERFLOW exist so the
-  experiment can be repeated.
+SQLite uses WAL so readers can coexist with a writer, with a 30-second busy
+timeout and SQLAlchemy's default pool (5 + 10). Pool overrides support the
+comparison in docs/database-pool-experiment.md. SQLite still has one writer;
+larger pools do not remove that constraint.
 """
 import os
 

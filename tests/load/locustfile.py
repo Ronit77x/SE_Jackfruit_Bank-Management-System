@@ -13,14 +13,26 @@ The login is not measured (BMS-NF-001 covers the three money endpoints). All amo
 import itertools
 import random
 
+import json
+import os
+from pathlib import Path
+
 import requests
-from locust import HttpUser, between, task
+from locust import HttpUser, between, events, task
 
 PASSWORD = "Passw0rd!"
 TELLERS = ["teller1", "teller2", "teller3"]
 CUSTOMER_IDS = [1, 2, 3, 4, 5]
 ALL_ACCOUNTS = [str(1000000000 + n) for n in range(1, 11)]
 _counter = itertools.count()
+_logins = {"successful": 0, "failed": 0}
+
+
+@events.test_stop.add_listener
+def save_login_counts(environment, **kwargs):
+    """Keep startup failures visible even though login latency is unmeasured."""
+    if path := os.getenv("BMS_LOAD_LOGIN_COUNTS"):
+        Path(path).write_text(json.dumps(_logins), encoding="utf-8")
 
 
 def customer_accounts(customer_id: int) -> list[str]:
@@ -35,11 +47,16 @@ class BankUser(HttpUser):
     def login(self, username: str) -> None:
         """Logs in with a plain request, so the login is NOT part of the measured statistics:
         BMS-NF-001 covers deposit, withdrawal and transfer only."""
-        response = requests.post(
-            self.host + "/auth/login", json={"username": username, "password": PASSWORD}, timeout=120
-        )
-        response.raise_for_status()
-        self.client.headers["Authorization"] = f"Bearer {response.json()['token']}"
+        try:
+            response = requests.post(
+                self.host + "/auth/login", json={"username": username, "password": PASSWORD}, timeout=120
+            )
+            response.raise_for_status()
+            self.client.headers["Authorization"] = f"Bearer {response.json()['token']}"
+        except Exception:
+            _logins["failed"] += 1
+            raise
+        _logins["successful"] += 1
 
 
 class TellerUser(BankUser):

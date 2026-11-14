@@ -1,79 +1,43 @@
-# SQLite settings under 50 simultaneous users: what was measured
+﻿# SQLite connection-pool experiment
 
-## Why this was looked at
-The first 50-user load test (`tests/load/locustfile.py`) produced a few HTTP 500 errors. The server log showed
-`sqlalchemy.exc.TimeoutError: QueuePool limit of size 5 overflow 10 reached, connection timed out`.
+PR #63 keeps SQLite's default pool (5 + 10), enables WAL and a 30-second busy timeout, and applies connection-health options only to client/server databases.
 
-## What was tried
-Four configurations, same workload each time, only the database settings differ:
+## Configurations and workload
 
-| Label | Journal mode | Pool (size + overflow) | How it is set |
+| Label | Journal | Busy timeout | Pool size + overflow |
 |---|---|---|---|
-| R0 original | default (rollback journal), SQLite default timeout | 5 + 10 | the original `app/database.py` |
-| R1 | WAL, 30 s busy timeout | 40 + 10 | `BMS_DB_POOL_SIZE=40 BMS_DB_MAX_OVERFLOW=10` |
-| R2 | WAL, 30 s busy timeout | 50 + 50 | `BMS_DB_POOL_SIZE=50 BMS_DB_MAX_OVERFLOW=50` |
-| R3 (current) | WAL, 30 s busy timeout | 5 + 10 | defaults |
+| R0 original | DELETE | 5 seconds | 5 + 10 |
+| R1 | WAL | 30 seconds | 40 + 10 |
+| R2 | WAL | 30 seconds | 50 + 50 |
+| R3 current defaults | WAL | 30 seconds | 5 + 10 |
 
-**Workload (identical for all):** `tests/load/locustfile.py`, 50 users (half Tellers doing deposits and withdrawals,
-half Customers doing transfers), ramp-up 10 users per second, 60 seconds, freshly seeded database, amounts of Rs 1.
-The login is not measured. Statistics are the aggregate of the three money endpoints.
+Each configuration runs three times for **120 seconds (2 minutes)**, with 50 users, a spawn rate of 10 users/second, and a freshly seeded database for every run. Half the users are Tellers depositing/withdrawing; half are Customers transferring. Amounts are Rs 1. The two-minute window includes ramp-up and login; login latency is excluded from transaction statistics, and successful/failed login counts are recorded separately. This is a single-process local HTTP workload. It does not verify deployed HTTPS performance or monthly availability.
 
-## Results (one run each, sandbox with a single CPU core)
+Runs alternate R0, R1, R2, R3 in each of three rounds. R0 uses the original database module from the recorded baseline commit; every other application file is identical to the benchmark source commit. R1-R3 use the updated module with environment overrides. Before starting each server, the runner checks the actual journal, timeout and pool settings. Fresh files prevent WAL state leaking into R0.
 
-| Run | Requests | Failures | Median (ms) | 95th percentile (ms) | `QueuePool` tracebacks in the server log |
-|---|---|---|---|---|---|
-| R0 original | 1,256 | 5 | 13 | 55 | 20 |
-| R1 pool 40 + 10, WAL | 3,800 | 0 | 10 | 26 | 0 |
-| R2 pool 50 + 50, WAL | 3,644 | 0 | 11 | 32 | 0 |
-| R3 pool 5 + 10, WAL | 3,668 | 0 | 8 | 22 | 0 |
+## Reproduce safely
 
-An earlier run of R0 gave 1,205 requests and 10 failures; an earlier run of R1 gave 3,650 requests, 0 failures and a 95th percentile of 32 ms.
+Use a separate Python environment containing `requirements.txt` and `locust==2.47.0`. Commit the source first. From the repository root:
 
-## What this shows
-- **WAL (plus the 30 s busy timeout) is what removed the errors.** Without it, readers and the single writer block each
-  other, requests wait while holding their connections, and after 30 seconds the pool gives up (R0). With WAL the
-  small default pool is enough (R3).
-- **The pool size makes no measurable difference.** R1, R2 and R3 are within normal run-to-run variation of each other.
-  This is expected: SQLite allows one writer at a time whatever the pool size, so more connections cannot add write
-  throughput; they only add memory and file handles. The pool was therefore **returned to SQLAlchemy's default
-  (5 + 10)**. An earlier change to 50 + 50 was based on the wrong explanation and is withdrawn.
-- A test (`tests/test_database_config.py`) proves the mechanism: in the default journal mode a writer cannot commit
-  while a reader is open; in WAL mode it can.
-- `pool_pre_ping` and `pool_recycle` are only set for client/server databases (for example PostgreSQL), where idle
-  connections can be closed by the server or a firewall. They are not needed for a local SQLite file.
-
-## Limits of this evidence
-Single 60-second runs on a one-core sandbox. The absolute numbers depend on the machine. Repeat the runs (three each)
-on your own machine and fill in the table below; the conclusion to check is whether R0 fails and R1-R3 do not.
-
-## How to repeat it
-In one terminal (virtual environment active, repository root):
 ```powershell
-python -m scripts.seed
-uvicorn app.main:app
-```
-In a second terminal:
-```powershell
-locust -f tests/load/locustfile.py --headless -u 50 -r 10 -t 60s --host http://127.0.0.1:8000 --csv docs/test-plan/pool-run
-```
-Read the `Aggregated` row of `docs/test-plan/pool-run_stats.csv` (Request Count, Failure Count, 50%, 95%).
-For each configuration stop the server, delete `bms.db*`, run `python -m scripts.seed`, set the variables, and start again:
-```powershell
-$env:BMS_DB_POOL_SIZE = "40"; $env:BMS_DB_MAX_OVERFLOW = "10"     # R1; use 50/50 for R2; remove both variables for R3
-Remove-Item Env:BMS_DB_POOL_SIZE, Env:BMS_DB_MAX_OVERFLOW        # back to the defaults
-```
-To reproduce R0, restore the original file from an earlier commit and put the current one back afterwards:
-```powershell
-git log --oneline -- app/database.py                  # pick the commit before this fix
-git show <that-commit>:app/database.py > app/database.py
-git checkout -- app/database.py                       # restore the current version
+python tests/load/run_pool_experiment.py --output "$env:TEMP\bms-pool-experiment-new-run"
 ```
 
-## Your machine (fill in from your own runs)
+Choose an output directory that does not exist. The runner snapshots committed source, creates isolated databases and throwaway encryption keys, starts its own server on port 8770, and stops that server after each run. It does not reset the repository's database or overwrite working source. Use `--port` if 8770 is occupied. The baseline defaults to main commit `380edd9037f3d1b61a018978c552a56739664b22`; use `--baseline <SHA>` to select another original baseline. The exact baseline SHA and module hashes are recorded in `results.json`.
 
-| Run | Requests | Failures | Median (ms) | 95th percentile (ms) |
-|---|---|---|---|---|
-| R0 original | | | | |
-| R1 pool 40 + 10, WAL | | | | |
-| R2 pool 50 + 50, WAL | | | | |
-| R3 pool 5 + 10, WAL | | | | |
+The underlying Locust invocation is identical to the harness instructions:
+
+```powershell
+locust -f tests/load/locustfile.py --headless -u 50 -r 10 -t 120s --host http://127.0.0.1:8770 --csv <run-directory>/load --csv-full-history --stop-timeout 10
+```
+
+Keep `results.json`, dependency versions, per-run CSVs and logs. Review startup login counts and errors as well as the aggregate latency. A run is invalid if any of the 50 users fails login. Transaction failures remain part of the evidence, even when Locust exits with code 1.
+
+## Your machine
+
+Actual results are being collected against the committed updated configuration. The final evidence will identify the source commit, machine, dependency versions and all twelve runs. Earlier Claude sandbox numbers have been removed because their raw evidence is unavailable; they are not machine measurements for this PR.
+
+## Interpretation and limits
+
+WAL permits a reader and writer to coexist, but SQLite still has one writer at a time. The focused tests verify this behavior and backend-specific engine options. The load experiment compares the configurations; it must not assume that R0 will fail or that larger pools will help. These short local runs cannot establish production capacity. Compare failures, request counts and variation between repeats before drawing conclusions.
+

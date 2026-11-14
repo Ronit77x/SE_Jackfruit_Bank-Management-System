@@ -1,6 +1,4 @@
 
-"""Account and customer endpoints. Owner: Member 2 (Vijay)."""
-
 from datetime import date
 from decimal import Decimal
 from typing import Annotated
@@ -10,11 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.constants import ACCOUNT_CURRENT, ACCOUNT_SAVINGS
 from app.database import get_db
 from app.deps import require_roles
 from app.services.account_service import open_account
-from app.services.audit_service import log_event
 
 router = APIRouter(tags=["accounts"])
 
@@ -56,6 +52,7 @@ def create_account(
             phone=payload.phone,
             email=payload.email,
             id_proof_number=payload.id_proof_number,
+            actor_id=getattr(teller, "id", None),
         )
     except ValueError as exc:
         raise HTTPException(
@@ -74,20 +71,6 @@ def create_account(
             detail="Unable to open the account. Please try again.",
         ) from exc
 
-    try:
-        log_event(
-            db,
-            user_id=getattr(teller, "id", None),
-            action="ACCOUNT_OPENED",
-            outcome="SUCCESS",
-            details=f"Customer ID {result['customer_id']}; account type {result['account_type']}",
-        )
-    except Exception:
-        # Audit helper currently commits independently; don't expose internal errors.
-        # Account creation has already committed at this point.
-        pass
-
-    # Never include a password field for an existing customer's account.
     if result["temporary_password"] is None:
         result.pop("temporary_password")
 

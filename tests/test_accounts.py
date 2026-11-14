@@ -2,13 +2,23 @@
 from datetime import date
 from decimal import Decimal
 
+import pytest
+from cryptography.fernet import Fernet
+from tests.auth_helpers import act_as
+
 from app.constants import (
     ACCOUNT_ACTIVE,
-    TXN_OPENING_DEPOSIT,
     ROLE_CUSTOMER,
+    TXN_OPENING_DEPOSIT,
 )
 from app.models import Account, Customer, Transaction, User
 from app.security import verify_password
+
+
+@pytest.fixture(autouse=True)
+def account_test_context(monkeypatch):
+    monkeypatch.setenv("BMS_DATA_KEY", Fernet.generate_key().decode())
+    act_as("Teller")
 
 
 def new_customer_payload(account_type="Savings", deposit="1000.00"):
@@ -27,7 +37,6 @@ def new_customer_payload(account_type="Savings", deposit="1000.00"):
 def test_open_savings_account_creates_transaction_and_login(client, db):
     response = client.post(
         "/accounts",
-        headers={"X-Test-Role": "Teller"},
         json=new_customer_payload(),
     )
 
@@ -60,7 +69,6 @@ def test_open_savings_account_creates_transaction_and_login(client, db):
 def test_savings_deposit_below_minimum_is_rejected(client, db):
     response = client.post(
         "/accounts",
-        headers={"X-Test-Role": "Teller"},
         json=new_customer_payload(deposit="500.00"),
     )
 
@@ -74,9 +82,9 @@ def test_savings_deposit_below_minimum_is_rejected(client, db):
 def test_current_account_requires_minimum_deposit(client, db):
     response = client.post(
         "/accounts",
-        headers={"X-Test-Role": "Teller"},
         json=new_customer_payload(
-            account_type="Current", deposit="4999.00"
+            account_type="Current",
+            deposit="4999.00",
         ),
     )
 
@@ -88,7 +96,6 @@ def test_current_account_requires_minimum_deposit(client, db):
 def test_second_account_does_not_create_another_login(client, db):
     first = client.post(
         "/accounts",
-        headers={"X-Test-Role": "Teller"},
         json=new_customer_payload(),
     )
     assert first.status_code == 201
@@ -98,7 +105,6 @@ def test_second_account_does_not_create_another_login(client, db):
 
     second = client.post(
         "/accounts",
-        headers={"X-Test-Role": "Teller"},
         json={
             "customer_id": customer_id,
             "account_type": "Current",
@@ -112,10 +118,10 @@ def test_second_account_does_not_create_another_login(client, db):
     assert db.query(User).count() == original_user_count
     assert db.query(Account).filter_by(customer_id=customer_id).count() == 2
 
+
 def test_current_account_accepts_exact_minimum_deposit(client):
     response = client.post(
         "/accounts",
-        headers={"X-Test-Role": "Teller"},
         json=new_customer_payload(
             account_type="Current",
             deposit="5000.00",
@@ -129,12 +135,10 @@ def test_current_account_accepts_exact_minimum_deposit(client):
 def test_two_new_accounts_have_different_account_numbers(client):
     first = client.post(
         "/accounts",
-        headers={"X-Test-Role": "Teller"},
         json=new_customer_payload(),
     )
     second = client.post(
         "/accounts",
-        headers={"X-Test-Role": "Teller"},
         json={
             **new_customer_payload(),
             "email": "second@example.com",

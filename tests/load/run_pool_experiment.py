@@ -28,7 +28,7 @@ def git(*args):
     return subprocess.check_output(["git", *args], cwd=ROOT)
 
 
-def run(output, port, baseline_ref):
+def run(output, port, baseline_ref, configurations, repeats):
     with socket.socket() as probe_socket:
         probe_socket.bind(("127.0.0.1", port))
     output.mkdir(parents=True, exist_ok=False)
@@ -45,11 +45,14 @@ def run(output, port, baseline_ref):
                 "updated_database_sha256": hashlib.sha256((snapshot / "app/database.py").read_bytes()).hexdigest(),
                 "platform": platform.platform(), "processor": platform.processor(),
                 "logical_cpus": os.cpu_count(), "python": sys.version,
-                "users": 50, "spawn_rate": 10, "duration_seconds": 120, "runs": []}
+                "users": 50, "spawn_rate": 10, "duration_seconds": 120,
+                "configuration_labels": configurations, "repeats": repeats, "runs": []}
     (output / "requirements-freeze.txt").write_bytes(
         subprocess.check_output([sys.executable, "-m", "pip", "freeze"]))
-    for repeat in range(1, 4):
+    for repeat in range(1, repeats + 1):
         for label, size, overflow in [("R0", 5, 10), ("R1", 40, 10), ("R2", 50, 50), ("R3", 5, 10)]:
+            if label not in configurations:
+                continue
             name = f"{label}-{repeat}"
             folder = output / name
             source = folder / "source"
@@ -120,5 +123,9 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=8770)
     parser.add_argument("--baseline", default="380edd9037f3d1b61a018978c552a56739664b22",
                         help="Commit containing the original database module")
+    parser.add_argument("--configurations", nargs="+", choices=("R0", "R1", "R2", "R3"),
+                        default=["R0", "R1", "R2", "R3"],
+                        help="Use R3 alone to validate the integrated default configuration")
+    parser.add_argument("--repeats", type=int, choices=range(1, 11), default=3)
     args = parser.parse_args()
-    run(args.output.resolve(), args.port, args.baseline)
+    run(args.output.resolve(), args.port, args.baseline, args.configurations, args.repeats)

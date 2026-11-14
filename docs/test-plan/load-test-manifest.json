@@ -1,0 +1,59 @@
+{
+  "source_commit": "e86d5d7d396d3d77e2b80a0cae0007ca0690d725",
+  "baseline_commit": "380edd9037f3d1b61a018978c552a56739664b22",
+  "baseline_database_sha256": "45eaa0ca341d0814ed69932d82ea0cf0643df86a4fb56c2ab2dd821bc7f66fc7",
+  "updated_database_sha256": "6ae35883d8bb204c0e007783485db70acd5a0b73bf4e9b26d147f96dae45115f",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "logical_cpus": 32,
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "users": 50,
+  "spawn_rate": 10,
+  "duration_seconds": 120,
+  "configuration_labels": [
+    "R3"
+  ],
+  "repeats": 1,
+  "runs": [
+    {
+      "run": "R3-1",
+      "configuration": {
+        "journal_mode": "wal",
+        "busy_timeout": 30000,
+        "pool_size": 5,
+        "max_overflow": 10
+      },
+      "logins": {
+        "successful": 50,
+        "failed": 0
+      },
+      "locust_exit_code": 0,
+      "elapsed_seconds": 121.92,
+      "statistics": {
+        "Type": "",
+        "Name": "Aggregated",
+        "Request Count": "6292",
+        "Failure Count": "0",
+        "Median Response Time": "310",
+        "Average Response Time": "259.61595279726464",
+        "Min Response Time": "8.999699995911215",
+        "Max Response Time": "1263.763499999186",
+        "Average Content Size": "83.49364272091545",
+        "Requests/s": "52.51492673334399",
+        "Failures/s": "0.0",
+        "50%": "310",
+        "66%": "340",
+        "75%": "360",
+        "80%": "370",
+        "90%": "430",
+        "95%": "490",
+        "98%": "570",
+        "99%": "650",
+        "99.9%": "1000",
+        "99.99%": "1300",
+        "100%": "1300"
+      },
+      "queuepool_timeouts": 0
+    }
+  ]
+}

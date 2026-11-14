@@ -74,7 +74,12 @@
 
     // Downloads a file with the login token and saves it (a plain link cannot send the Authorization header).
     download: async function (path, fallbackName) {
-      var response = await fetch(path, { headers: { "Authorization": "Bearer " + bms.token() } });
+      var response;
+      try {
+        response = await fetch(path, { headers: { "Authorization": "Bearer " + bms.token() } });
+      } catch (networkError) {
+        throw bms.makeError(0, "NETWORK_ERROR", "Cannot reach the server. Is it running?");
+      }
       if (!response.ok) {
         var message = "Download failed (" + response.status + ")";
         try { var data = await response.json(); message = data.message || message; } catch (ignore) { /* keep message */ }
@@ -139,6 +144,15 @@
     hide: function (node) { node.textContent = ""; node.className = "message"; },
 
     money: function (value) {
+      // API money is a decimal string. Group its digits without floating-point
+      // conversion, which can change paise on large statement amounts.
+      var exact = /^(-?)(\d+)(?:\.(\d{1,2}))?$/.exec(String(value));
+      if (exact) {
+        var whole = exact[2].replace(/^0+(?=\d)/, "");
+        var tail = whole.slice(-3), leading = whole.slice(0, -3);
+        return "Rs " + exact[1] + (leading ? leading.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," : "") +
+          tail + "." + (exact[3] || "").padEnd(2, "0");
+      }
       var number = Number(value);
       return isNaN(number) ? String(value) : "Rs " + number.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     },

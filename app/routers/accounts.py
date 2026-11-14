@@ -101,6 +101,7 @@ def get_my_accounts(
     return {
         "accounts": [
             {
+                "account_id": account.id,
                 "account_number": mask_account_number(account.account_number),
                 "account_type": account.type,
                 "balance": str(account.balance),

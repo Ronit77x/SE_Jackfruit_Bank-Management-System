@@ -42,3 +42,4 @@ TRANSFER_LIMIT = Decimal("100000")  # BR-03
 DEPOSIT_LIMIT = Decimal("200000")  # BR-03
 MAX_FAILED_LOGINS = 3  # BR-07
 SESSION_IDLE_MINUTES = 10  # BMS-SR-003
+AUDIT_RETENTION_YEARS = 5  # Configured retention policy; no application purge job exists.

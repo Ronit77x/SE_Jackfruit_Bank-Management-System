@@ -25,6 +25,16 @@ def test_admin_can_list_audit_logs_newest_first(client, db):
     assert set(response.json()[0]) == {"id", "timestamp", "user_id", "action", "outcome", "details"}
 
 
+@pytest.mark.parametrize("role", ["Customer", "Teller"])
+def test_only_admin_can_list_audit_logs(client, role):
+    act_as(role)
+    assert client.get("/admin/audit-logs").status_code == 403
+
+
+def test_unauthenticated_audit_log_access_is_rejected(client):
+    assert client.get("/admin/audit-logs").status_code == 401
+
+
 def test_audit_filters_and_ist_date_boundaries(client, db):
     # 00:00 IST is the preceding UTC day at 18:30.
     add_log(db, 7, "DEPOSIT", datetime(2026, 3, 9, 18, 30, tzinfo=timezone.utc))
@@ -52,3 +62,19 @@ def test_empty_results_and_limit_validation(client, db):
     act_as("Admin")
     assert client.get("/admin/audit-logs", params={"action": "MISSING"}).json() == []
     assert client.get("/admin/audit-logs", params={"limit": 500}).status_code == 200
+
+
+def test_equal_timestamps_are_ordered_by_id_and_get_does_not_mutate_records(client, db):
+    timestamp = datetime(2026, 3, 10, 18, 30, tzinfo=timezone.utc)
+    older = add_log(db, 7, "OLDER", timestamp)
+    newer = add_log(db, 8, "NEWER", timestamp)
+    before = [(entry.id, entry.timestamp, entry.action, entry.details) for entry in (older, newer)]
+    act_as("Admin")
+
+    response = client.get("/admin/audit-logs")
+
+    assert response.status_code == 200
+    assert [row["id"] for row in response.json()] == [newer.id, older.id]
+    db.expire_all()
+    after_entries = [db.get(type(older), entry_id) for entry_id, *_ in before]
+    assert [(entry.id, entry.timestamp, entry.action, entry.details) for entry in after_entries] == before

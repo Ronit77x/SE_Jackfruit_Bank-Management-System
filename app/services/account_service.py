@@ -4,6 +4,7 @@
 import secrets
 from decimal import Decimal
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.constants import (
@@ -15,8 +16,8 @@ from app.constants import (
     TXN_OPENING_DEPOSIT,
     USER_ACTIVE,
 )
-from app.models import Account, Customer, Transaction, User
-from app.security import hash_password
+from app.models import Account, AuditLog, Customer, Transaction, User
+from app.security import encrypt_value, hash_password
 
 
 def open_account(
@@ -30,6 +31,7 @@ def open_account(
     phone: str | None = None,
     email: str | None = None,
     id_proof_number: str | None = None,
+    actor_id: int | None = None,
 ) -> dict:
     """Open an account and create a customer login for a first account."""
 
@@ -58,13 +60,17 @@ def open_account(
                     "All customer fields are required for a new customer."
                 )
 
+            encrypted_id = encrypt_value(id_proof_number)
+            if len(encrypted_id) > 255:
+                raise ValueError("ID proof is too long for encrypted storage.")
+
             customer = Customer(
                 name=name,
                 date_of_birth=date_of_birth,
                 address=address,
                 phone=phone,
                 email=email,
-                id_proof_number=id_proof_number,
+                id_proof_number=encrypted_id,
             )
             db.add(customer)
             db.flush()
@@ -74,31 +80,37 @@ def open_account(
             db.query(Account).filter_by(customer_id=customer.id).first() is None
         )
 
-        # Generate a unique 10-digit account number.
-        account_number = None
+        # sqlite3 legacy mode does not BEGIN for SELECT. A first SAVEPOINT would
+        # otherwise commit an existing customer's account when released, so the
+        # final rollback could not undo it. Ensure an outer transaction exists.
+        if db.get_bind().dialect.name == "sqlite":
+            connection = db.connection()
+            if not connection.connection.driver_connection.in_transaction:
+                connection.exec_driver_sql("BEGIN")
+
+        # The UNIQUE constraint arbitrates collisions, including concurrent requests.
+        # A savepoint rolls back only the attempted account, preserving the customer.
+        account = None
         for _ in range(20):
             candidate = str(secrets.randbelow(9_000_000_000) + 1_000_000_000)
-            exists = (
-                db.query(Account)
-                .filter_by(account_number=candidate)
-                .first()
-            )
-            if exists is None:
-                account_number = candidate
+            try:
+                with db.begin_nested():
+                    proposed = Account(
+                        account_number=candidate,
+                        customer_id=customer.id,
+                        type=account_type,
+                        balance=deposit,
+                        status=ACCOUNT_ACTIVE,
+                    )
+                    db.add(proposed)
+                    db.flush()
+                account = proposed
                 break
-
-        if account_number is None:
+            except IntegrityError:
+                if db.query(Account).filter_by(account_number=candidate).first() is None:
+                    raise
+        if account is None:
             raise RuntimeError("Could not generate a unique account number.")
-
-        account = Account(
-            account_number=account_number,
-            customer_id=customer.id,
-            type=account_type,
-            balance=deposit,
-            status=ACCOUNT_ACTIVE,
-        )
-        db.add(account)
-        db.flush()
 
         transaction = Transaction(
             account_id=account.id,
@@ -126,6 +138,14 @@ def open_account(
                 )
                 db.add(user)
 
+        # Do not call log_event here: its independent commit breaks atomicity.
+        # These details contain no credentials, ID proof or account number.
+        db.add(AuditLog(
+            user_id=actor_id,
+            action="ACCOUNT_OPENED",
+            outcome="SUCCESS",
+            details=f"Customer ID {customer.id}; account type {account.type}",
+        ))
         db.commit()
         db.refresh(customer)
         db.refresh(account)

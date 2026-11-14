@@ -11,10 +11,10 @@ from sqlalchemy.orm import Session
 
 from app.constants import ACCOUNT_CURRENT, ACCOUNT_SAVINGS, ROLE_CUSTOMER
 from app.database import get_db
-from app.deps import get_current_user, require_roles
+from app.deps import require_roles
 from app.models import Account
 from app.services.account_service import open_account
-from app.services.audit_service import log_event
+from app.security import mask_account_number
 
 router = APIRouter(tags=["accounts"])
 
@@ -56,6 +56,7 @@ def create_account(
             phone=payload.phone,
             email=payload.email,
             id_proof_number=payload.id_proof_number,
+            actor_id=getattr(teller, "id", None),
         )
     except ValueError as exc:
         raise HTTPException(
@@ -74,21 +75,6 @@ def create_account(
             detail="Unable to open the account. Please try again.",
         ) from exc
 
-    try:
-        log_event(
-            db,
-            user_id=getattr(teller, "id", None),
-            action="ACCOUNT_OPENED",
-            outcome="SUCCESS",
-            details=(
-                f"Customer ID {result['customer_id']}; "
-                f"account type {result['account_type']}"
-            ),
-        )
-    except Exception:
-        # Account creation has already committed at this point.
-        pass
-
     if result["temporary_password"] is None:
         result.pop("temporary_password")
 
@@ -98,7 +84,7 @@ def create_account(
 @router.get("/accounts")
 def get_my_accounts(
     db: Annotated[Session, Depends(get_db)],
-    user=Depends(get_current_user),
+    user=Depends(require_roles(ROLE_CUSTOMER)),
 ):
     """Return the authenticated customer's account details and balances."""
 
@@ -115,7 +101,7 @@ def get_my_accounts(
     return {
         "accounts": [
             {
-                "account_number": f"******{account.account_number[-4:]}",
+                "account_number": mask_account_number(account.account_number),
                 "account_type": account.type,
                 "balance": str(account.balance),
                 "status": account.status,

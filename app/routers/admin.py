@@ -7,16 +7,28 @@ Planned endpoints (baseline Part A section 3):
   GET   /admin/reports/daily        daily transaction summary
 """
 from datetime import date, datetime, time, timedelta, timezone
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.constants import ROLE_ADMIN, ROLE_TELLER, USER_ACTIVE, USER_INACTIVE, USER_LOCKED
+from app.constants import (
+    ROLE_ADMIN,
+    ROLE_TELLER,
+    TXN_DEPOSIT,
+    TXN_OPENING_DEPOSIT,
+    TXN_TRANSFER_OUT,
+    TXN_WITHDRAWAL,
+    USER_ACTIVE,
+    USER_INACTIVE,
+    USER_LOCKED,
+)
 from app.database import get_db
 from app.deps import require_roles
-from app.models import User
+from app.models import Transaction, User
 from app.security import hash_password
 from app.services.audit_service import log_event
 
@@ -32,6 +44,93 @@ class AuditLogResponse(BaseModel):
     action: str
     outcome: str
     details: str
+
+
+class TransactionSummary(BaseModel):
+    count: int
+    total_amount: Decimal
+
+
+class DepositSummary(TransactionSummary):
+    opening_deposits: TransactionSummary
+
+
+class DailyReportResponse(BaseModel):
+    report_date: date
+    timezone: str
+    generated_at: datetime
+    deposits: DepositSummary
+    withdrawals: TransactionSummary
+    transfers: TransactionSummary
+
+
+BANK_TIMEZONE = timezone(timedelta(hours=5, minutes=30))
+BANK_TIMEZONE_NAME = "Asia/Kolkata"
+
+
+def _report_day_bounds(value: str) -> tuple[date, datetime, datetime]:
+    try:
+        report_date = date.fromisoformat(value)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Date must be in YYYY-MM-DD format") from exc
+    start_local = datetime.combine(report_date, time.min, tzinfo=BANK_TIMEZONE)
+    next_day_local = start_local + timedelta(days=1)
+    return (
+        report_date,
+        start_local.astimezone(timezone.utc).replace(tzinfo=None),
+        next_day_local.astimezone(timezone.utc).replace(tzinfo=None),
+    )
+
+
+@router.get("/reports/daily", response_model=DailyReportResponse)
+def daily_transaction_report(
+    date: str = Query(..., description="Bank-local report date in YYYY-MM-DD format"),
+    db: Session = Depends(get_db),
+    admin=Depends(require_roles(ROLE_ADMIN)),
+):
+    """Return a bank-wide daily transaction summary for the selected IST day.
+
+    OpeningDeposit rows, if present, are included in deposits and exposed as a
+    transparent subcategory. TransferOut is the canonical transfer event so a
+    transfer's matching TransferIn row is not double-counted.
+    """
+    report_date, start_utc, end_utc = _report_day_bounds(date)
+    amount_sum = lambda condition: func.coalesce(func.sum(case((condition, Transaction.amount), else_=0)), 0)
+    count_rows = lambda condition: func.coalesce(func.sum(case((condition, 1), else_=0)), 0)
+    aggregates = db.execute(
+        select(
+            count_rows(Transaction.type.in_((TXN_DEPOSIT, TXN_OPENING_DEPOSIT))).label("deposit_count"),
+            amount_sum(Transaction.type.in_((TXN_DEPOSIT, TXN_OPENING_DEPOSIT))).label("deposit_total"),
+            count_rows(Transaction.type == TXN_OPENING_DEPOSIT).label("opening_count"),
+            amount_sum(Transaction.type == TXN_OPENING_DEPOSIT).label("opening_total"),
+            count_rows(Transaction.type == TXN_WITHDRAWAL).label("withdrawal_count"),
+            amount_sum(Transaction.type == TXN_WITHDRAWAL).label("withdrawal_total"),
+            count_rows(Transaction.type == TXN_TRANSFER_OUT).label("transfer_count"),
+            amount_sum(Transaction.type == TXN_TRANSFER_OUT).label("transfer_total"),
+        ).where(Transaction.created_at >= start_utc, Transaction.created_at < end_utc)
+    ).one()
+
+    def money(value) -> Decimal:
+        return Decimal(str(value or 0)).quantize(Decimal("0.01"))
+
+    def summary(count, total) -> TransactionSummary:
+        return TransactionSummary(count=int(count or 0), total_amount=money(total))
+
+    # BMS-SR-006: report generation is an administrative action; details contain
+    # only the selected date and no customer, account or financial information.
+    log_event(db, admin.id, "DAILY_REPORT_GENERATED", "SUCCESS", f"report_date={report_date.isoformat()}")
+    return DailyReportResponse(
+        report_date=report_date,
+        timezone=BANK_TIMEZONE_NAME,
+        generated_at=datetime.now(timezone.utc),
+        deposits=DepositSummary(
+            count=int(aggregates.deposit_count or 0),
+            total_amount=money(aggregates.deposit_total),
+            opening_deposits=summary(aggregates.opening_count, aggregates.opening_total),
+        ),
+        withdrawals=summary(aggregates.withdrawal_count, aggregates.withdrawal_total),
+        transfers=summary(aggregates.transfer_count, aggregates.transfer_total),
+    )
 
 
 def _ist_day_boundary(value: str, *, end: bool) -> datetime:

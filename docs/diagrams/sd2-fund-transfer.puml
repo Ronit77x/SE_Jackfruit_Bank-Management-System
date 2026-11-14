@@ -1,0 +1,45 @@
+@startuml
+title SD-2 Fund transfer (BMS-F-022, BMS-NF-003, BMS-SR-004, BMS-SR-006, BMS-F-033)
+actor Customer
+participant "Web UI" as UI
+participant "Transaction Controller" as C
+participant "Auth / RBAC check" as AU
+participant "Transaction Service" as T
+participant "Data Access Layer" as D
+database "Database" as DB
+participant "Audit and Notification" as A
+
+Customer -> UI : enter destination account and amount
+UI -> C : POST /transactions/transfer {fromAccount, toAccount, amount}
+C -> AU : verify session, role = Customer, owns fromAccount
+
+alt not authenticated or not authorised
+  AU --> C : denied
+  C -> A : log(ACCESS_DENIED)
+  C --> UI : 401 / 403
+else authorised
+  C -> T : transfer(from, to, amount)
+  T -> T : validate amount (max Rs 1,00,000, BR-03)
+  T -> D : beginTransaction()
+  T -> D : read both accounts inside the transaction
+  D -> DB : read accounts
+  DB --> D : balances and statuses
+
+  alt insufficient funds, below minimum balance, frozen or closed account
+    T -> D : rollback()
+    T -> A : log(TRANSFER_REJECTED)
+    T --> C : error with reason
+    C --> UI : 422 / 409 with reason
+  else all checks pass
+    T -> D : debit(from, amount)
+    T -> D : credit(to, amount)
+    T -> D : insert two transaction records
+    T -> D : commit()
+    T -> A : log(TRANSFER_SUCCESS)
+    T -> A : notify(from, to)
+    T --> C : success {transactionId, balance}
+    C --> UI : 201 Created
+    UI --> Customer : confirmation
+  end
+end
+@enduml

@@ -1,0 +1,40 @@
+@startuml
+title BMS - Component Diagram
+skinparam componentStyle rectangle
+
+package "Presentation Layer" {
+  [Web UI (DS-UI)] as UI
+}
+package "API Layer" {
+  [REST Controllers] as API
+  [Security Layer (DS-SEC)\nTLS, validation, masking, rate limiting] as SEC
+}
+package "Service Layer" {
+  [Auth Service (DS-AUTH)] as AUTH
+  [Account Service (DS-ACC)] as ACC
+  [Transaction Service (DS-TXN)] as TXN
+  [Admin and Reporting Service (DS-ADM)] as ADM
+  [Audit and Notification Service (DS-AUD)] as AUD
+}
+package "Data Layer" {
+  [Data Access Layer (DS-DB)] as DAL
+  database "BMS Database" as DB
+}
+
+UI --> API : HTTPS / JSON
+API ..> SEC : uses
+API --> AUTH
+API --> ACC
+API --> TXN
+API --> ADM
+AUTH --> DAL
+ACC --> DAL
+TXN --> DAL
+ADM --> DAL
+AUD --> DAL
+AUTH ..> AUD : audit events
+ACC ..> AUD : audit events
+TXN ..> AUD : audit + notifications
+ADM ..> AUD : audit events
+DAL --> DB
+@enduml

@@ -1,0 +1,42 @@
+@startuml
+title SD-1 Login with account lockout (BMS-F-001, BMS-F-002, BMS-SR-006)
+actor User
+participant "Web UI" as UI
+participant "Auth Controller" as C
+participant "Auth Service" as S
+participant "Data Access Layer" as D
+database "Database" as DB
+participant "Audit Service" as A
+
+User -> UI : enter username and password
+UI -> C : POST /auth/login (HTTPS)
+C -> S : authenticate(username, password)
+S -> D : findUser(username)
+D -> DB : read user record
+DB --> D : user record
+D --> S : user
+
+alt user not found or already locked
+  S -> A : log(LOGIN_REJECTED)
+  S --> C : rejected
+  C --> UI : 401 Invalid credentials / 423 Account locked
+else password matches
+  S -> D : resetFailedAttempts(user)
+  S -> A : log(LOGIN_SUCCESS)
+  S --> C : session token, role, mustChangePassword
+  C --> UI : 200 OK
+  UI --> User : role home page (or forced password change)
+else password does not match
+  S -> D : incrementFailedAttempts(user)
+  alt failed attempts reach 3
+    S -> D : lockUser(user)
+    S -> A : log(ACCOUNT_LOCKED)
+    S --> C : locked
+    C --> UI : 423 Account locked
+  else fewer than 3 failed attempts
+    S -> A : log(LOGIN_FAILED)
+    S --> C : invalid credentials
+    C --> UI : 401 Invalid credentials
+  end
+end
+@enduml

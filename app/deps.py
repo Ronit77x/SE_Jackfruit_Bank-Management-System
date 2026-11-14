@@ -1,0 +1,116 @@
+"""Shared authentication and role-check dependencies."""
+from datetime import datetime, timedelta, timezone
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.orm import Session
+
+from app.constants import SESSION_IDLE_MINUTES
+from app.database import get_db
+from app.models import User
+from app.services.audit_service import log_event
+from app.sessions import _sessions
+
+
+_bearer = HTTPBearer(
+    auto_error=False,
+    scheme_name="BearerAuth",
+    description="Log in through POST /auth/login, then paste the returned token here.",
+)
+
+
+def get_authorization_header(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+) -> str | None:
+    """Expose Bearer authentication in OpenAPI while retaining our existing 401 errors."""
+    if credentials is None:
+        return None
+    return f"{credentials.scheme} {credentials.credentials}"
+
+
+def get_current_user(
+    authorization: str | None = Depends(get_authorization_header),
+    db: Session = Depends(get_db),
+):
+    """Return the database user associated with a valid Bearer token."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    token = authorization[7:].strip()
+    session = _sessions.get(token)
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired session",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    now = datetime.now(timezone.utc)
+    if session["expires_at"] <= now:
+        _sessions.pop(token, None)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired session",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Enforce the 10-minute idle timeout by tracking last activity.
+    last_activity = session.get("last_activity", session["expires_at"] - timedelta(minutes=SESSION_IDLE_MINUTES))
+    if now - last_activity >= timedelta(minutes=SESSION_IDLE_MINUTES):
+        _sessions.pop(token, None)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session expired due to inactivity",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = db.query(User).filter(User.id == session["user_id"]).first()
+    if user is None or user.status != "Active":
+        _sessions.pop(token, None)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User is unavailable",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    session["last_activity"] = now
+    session["expires_at"] = now + timedelta(minutes=SESSION_IDLE_MINUTES)
+    return user
+
+
+def require_roles(*allowed_roles: str):
+    """Allow access only when the authenticated user has an allowed role.
+
+    - 403 (and an ACCESS_DENIED audit event) when the role is not allowed.
+    - 403 for a user who still has a temporary password (BMS-F-004): such a user may only change the password.
+    """
+
+    def checker(user=Depends(get_current_user), db: Session = Depends(get_db)):
+        if getattr(user, "must_change_password", False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You must change your temporary password first",
+            )
+        if user.role not in allowed_roles:
+            try:
+                log_event(
+                    db,
+                    getattr(user, "id", None),
+                    "ACCESS_DENIED",
+                    "DENIED",
+                    f"role {user.role} tried an action that needs: {', '.join(allowed_roles)}",
+                )
+            except Exception:  # the 403 must be returned even if auditing fails
+                db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions",
+            )
+        return user
+
+    return checker

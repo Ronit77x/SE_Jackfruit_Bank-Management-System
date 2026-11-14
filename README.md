@@ -25,7 +25,7 @@ docs/
   sad/          Software Architecture & Design Specification (Member 3)
   diagrams/     UML diagrams (PNG + source files)
   backlog/      Sprint plan and backlog coverage check (Member 4)
-src/            Application code (Sprints 1 and 2)
+app/ Application code (FastAPI backend).
 tests/          Automated tests
 .github/        Issue and pull request templates (CI workflow added in Sprint 1)
 ```

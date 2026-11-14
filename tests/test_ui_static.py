@@ -31,6 +31,7 @@ def test_every_page_has_the_responsive_meta_tag_and_shared_scripts():
         assert "/ui/js/api.js" in text, page.name
 
 
-def test_the_layout_is_usable_at_360_pixels():
+def test_css_declares_narrow_screen_and_table_overflow_rules():
+    """Source-level check only; rendered browser/viewport verification is separate."""
     css = (STATIC / "css" / "style.css").read_text(encoding="utf-8")
     assert "max-width: 400px" in css and "overflow-x: auto" in css

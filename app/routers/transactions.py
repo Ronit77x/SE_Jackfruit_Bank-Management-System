@@ -172,8 +172,13 @@ def statement(
             "SUCCESS",
             f"account {service.mask_account_number(account.account_number)} period {date_from} to {date_to} rows {len(rows)}",
         )
-    except Exception:  # an audit problem must not stop the customer from getting the statement
+    except Exception as exc:
         db.rollback()
+        # A successful response requires a durable audit record (BMS-SR-006).
+        raise service.AppError(
+            503, "STATEMENT_AUDIT_UNAVAILABLE",
+            "Statement download is temporarily unavailable. Please try again.",
+        ) from exc
     last4 = account.account_number[-4:]
     filename = f"statement-{last4}-{date_from.isoformat()}-{date_to.isoformat()}.csv"
     return Response(

@@ -252,3 +252,34 @@ def test_a_denied_download_is_not_recorded_as_a_download(client, db):
     day = today_ist().isoformat()
     assert client.get(f"/accounts/{acct.account_number}/statement", params={"from": day, "to": day}).status_code == 403
     assert db.query(AuditLog).filter_by(action="STATEMENT_DOWNLOAD").count() == 0
+
+
+def test_statement_audit_storage_failure_returns_no_csv_and_rolls_back(client, db):
+    from sqlalchemy import event
+    from app.models import AuditLog
+
+    customer, acct = make_account(db)
+    make_activity(db, acct)
+    act_as("Customer", customer_id=customer.id)
+    before = db.query(AuditLog).count()
+
+    def reject_statement_audit(session, flush_context, instances):
+        if any(isinstance(row, AuditLog) and row.action == "STATEMENT_DOWNLOAD" for row in session.new):
+            raise RuntimeError("private audit database error")
+
+    event.listen(db, "before_flush", reject_statement_audit)
+    day = today_ist().isoformat()
+    try:
+        response = client.get(f"/accounts/{acct.account_number}/statement", params={"from": day, "to": day})
+    finally:
+        event.remove(db, "before_flush", reject_statement_audit)
+    assert response.status_code == 503
+    assert response.json()["code"] == "STATEMENT_AUDIT_UNAVAILABLE"
+    assert response.headers["content-type"].startswith("application/json")
+    assert "content-disposition" not in response.headers
+    assert "private audit" not in response.text and acct.account_number not in response.text
+    assert db.query(AuditLog).count() == before
+    # The failed session is usable again; a retry succeeds and is audited once.
+    retry = client.get(f"/accounts/{acct.account_number}/statement", params={"from": day, "to": day})
+    assert retry.status_code == 200
+    assert db.query(AuditLog).filter_by(action="STATEMENT_DOWNLOAD").count() == 1

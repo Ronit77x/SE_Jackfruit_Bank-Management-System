@@ -1,0 +1,46 @@
+@startuml
+!pragma layout smetana
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam actorStyle awesome
+
+actor Admin
+actor Teller
+actor Customer
+actor "Notification Service" as NS
+
+rectangle "Bank Management System" {
+  usecase "Login" as Login
+  usecase "Create staff user" as Create
+  usecase "Deactivate user" as Deactivate
+  usecase "Unlock user" as Unlock
+  usecase "Freeze / unfreeze / close account" as Freeze
+  usecase "View audit log" as Audit
+  usecase "View daily report" as Report
+  usecase "Send transaction notification" as Notify
+
+  Create ..> Login : <<include>>
+  Deactivate ..> Login : <<include>>
+  Unlock ..> Login : <<include>>
+  Freeze ..> Login : <<include>>
+  Audit ..> Login : <<include>>
+  Report ..> Login : <<include>>
+}
+
+Admin -- Login
+Admin -- Create
+Admin -- Deactivate
+Admin -- Unlock
+Admin -- Freeze
+Admin -- Audit
+Admin -- Report
+Teller -- Login
+NS -- Notify
+Customer -- Notify : recipient
+
+note bottom of Notify
+BMS triggers a simulated notification after every debit or credit.
+The Customer is the recipient. No real SMS/e-mail gateway is in scope.
+end note
+@enduml

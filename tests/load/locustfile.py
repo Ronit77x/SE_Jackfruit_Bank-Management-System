@@ -1,10 +1,15 @@
 """Load test for BMS-NF-001: 95 % of deposit, withdrawal and transfer requests within 3 seconds with 50 users.
 
-Run (from the repository root, with the seed data loaded):
+Recommended isolated comparison (see docs/database-pool-experiment.md):
+
+    python tests/load/run_pool_experiment.py --output <new-external-directory>
+
+Manual run: first configure BMS_DATABASE_URL to a disposable database and
+BMS_DATA_KEY to a valid Fernet key, then run from the repository root:
 
     python -m scripts.seed
     uvicorn app.main:app
-    locust -f tests/load/locustfile.py --headless -u 50 -r 10 -t 2m --host http://127.0.0.1:8000 --csv docs/test-plan/load-test
+    locust -f tests/load/locustfile.py --headless -u 50 -r 10 -t 120s --host http://127.0.0.1:8000 --csv docs/test-plan/load-test
 
 Users: half are Tellers (deposit and withdraw), half are Customers (transfer between the seeded accounts).
 The login is not measured (BMS-NF-001 covers the three money endpoints). All amounts are Rs 1 so no limit (minimum balance, daily limit) is ever reached. Every seeded user has the password

@@ -35,9 +35,9 @@ Keep `results.json`, dependency versions, per-run CSVs and logs. Review startup 
 
 ## Your machine
 
-Collected on 14?15 November 2026 (local time), Windows 11 build 26200, Intel64 Family 6 Model 183 Stepping 1, 32 logical CPUs; Python 3.12.14, Locust 2.47.0. Exact installed versions are in [requirements-freeze.txt](test-plan/pool-experiment/requirements-freeze.txt).
+Collected on 14-15 November 2026 (local time), Windows 11 build 26200, Intel64 Family 6 Model 183 Stepping 1, 32 logical CPUs; Python 3.12.14, Locust 2.47.0. Exact installed versions are in [requirements-freeze.txt](test-plan/pool-experiment/requirements-freeze.txt).
 
-**Benchmark source commit:** `474371310d21e44e185321f05553c53a6187f02d`. **R0 baseline module commit:** `380edd9037f3d1b61a018978c552a56739664b22`. R1-R3 used the updated configuration from the benchmark source commit. The journal, timeout and pool were checked on each fresh database before starting its server.
+**Benchmark source commit:** `474371310d21e44e185321f05553c53a6187f02d`. **R0 baseline module commit:** `380edd9037f3d1b61a018978c552a56739664b22`. R1-R3 used the updated configuration from the benchmark source commit. Subsequent evidence and instruction-comment changes do not alter application code or workload behavior. The journal, timeout and pool were checked on each fresh database before starting its server.
 
 Updated database module SHA-256: `6ae35883d8bb204c0e007783485db70acd5a0b73bf4e9b26d147f96dae45115f`. Baseline module SHA-256: `45eaa0ca341d0814ed69932d82ea0cf0643df86a4fb56c2ab2dd821bc7f66fc7`.
 
@@ -58,10 +58,10 @@ Updated database module SHA-256: `6ae35883d8bb204c0e007783485db70acd5a0b73bf4e9b
 
 | Configuration | Request-count range | Aggregate p95 range (ms) | Median of run p95s (ms) |
 |---|---:|---:|---:|
-| R0 | 3,497?5,159 | 1300?2100 | 2100 |
-| R1 | 6,867?7,477 | 310?360 | 330 |
-| R2 | 5,817?8,599 | 59?390 | 360 |
-| R3 | 5,829?8,567 | 62?390 | 370 |
+| R0 | 3,497-5,159 | 1300-2100 | 2100 |
+| R1 | 6,867-7,477 | 310-360 | 330 |
+| R2 | 5,817-8,599 | 59-390 | 360 |
+| R3 | 5,829-8,567 | 62-390 | 370 |
 
 **Observed result:** all twelve runs had zero transaction failures, zero pool timeout tracebacks, and 50 successful logins. The original configuration did not reproduce the earlier reported HTTP 500 errors. WAL plus the longer timeout delivered lower aggregate p95 latency in all three rounds. Increasing the WAL pool did not provide a consistent advantage over the default pool, so the default 5 + 10 remains appropriate for this measured workload. This comparison changes WAL and busy timeout together; it does not isolate their individual contributions.
 

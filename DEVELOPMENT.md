@@ -11,6 +11,35 @@ pytest                               # run all tests
 ```
 Always run commands from the repository root (the folder that contains `app/` and `tests/`).
 
+## Sensitive-data encryption
+
+`BMS_DATA_KEY` is the Fernet key used by the security helpers to encrypt sensitive string
+values such as ID-proof numbers before they are stored. Keep the same stable key for the
+life of the data: changing it makes existing encrypted values unreadable. Generate a key
+with:
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Configure it using a placeholder for the generated secret:
+
+macOS/Linux:
+
+```bash
+export BMS_DATA_KEY="<generated-fernet-key>"
+```
+
+Windows PowerShell:
+
+```powershell
+$env:BMS_DATA_KEY = "<generated-fernet-key>"
+```
+
+Never commit the key, place it in source code, or store it in a tracked `.env` file.
+If the key is lost or changed, existing encrypted data cannot be decrypted and must be
+recovered from a secure backup or replaced through an approved migration process.
+
 ## Who edits which files (this avoids merge conflicts)
 
 | Member | Files you own |
@@ -39,3 +68,9 @@ Create new files freely inside your own area (for example `app/services/account_
 5. On GitHub open a PR into `main`, title `[US-xx] Title`, description `Closes #<issue number>`, request your reviewer.
 6. The repo owner merges with "Create a merge commit".
 Never commit directly to `main`. Never force-push.
+
+## Running tests
+
+Activate the virtual environment before running tests.
+Run `pytest` from the repository root to execute all tests.
+Run `pytest tests/test_factories.py -v` to run factory tests only.

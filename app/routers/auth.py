@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 from app.constants import MAX_FAILED_LOGINS, ROLE_ADMIN, USER_ACTIVE, USER_LOCKED
 from app.database import get_db
 from app.models import User
-from app.deps import require_roles
-from app.security import hash_password, verify_password
+from app.deps import get_current_user, require_roles
+from app.security import hash_password, validate_password_complexity, verify_password
 from app.services.audit_service import log_event
 from app.sessions import _sessions
 
@@ -47,6 +47,12 @@ class LoginResponse(BaseModel):
 
 class UnlockRequest(BaseModel):
     username: str = Field(min_length=1, max_length=60)
+
+
+class ChangePasswordRequest(BaseModel):
+    currentPassword: str = Field(min_length=1, max_length=128)
+    newPassword: str = Field(min_length=1, max_length=128)
+
 
 
 def _remove_expired_sessions() -> None:
@@ -165,3 +171,60 @@ def unlock_account(
     )
 
     return {"message": "Account unlocked"}
+
+
+@router.post("/change-password")
+def change_password(
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    authorization: str | None = Header(default=None),
+):
+    current_token = authorization[7:].strip() if authorization and authorization.startswith("Bearer ") else None
+
+    # 1. Verify current password
+    if not verify_password(payload.currentPassword, current_user.password_hash):
+        log_event(
+            db,
+            current_user.id,
+            "CHANGE_PASSWORD",
+            "FAILURE",
+            "Incorrect current password",
+        )
+        raise HTTPException(status_code=400, detail="Incorrect current password")
+
+    # 2. Validate new password complexity
+    is_valid, error_msg = validate_password_complexity(payload.newPassword)
+    if not is_valid:
+        log_event(
+            db,
+            current_user.id,
+            "CHANGE_PASSWORD",
+            "FAILURE",
+            f"Password complexity failed: {error_msg}",
+        )
+        raise HTTPException(status_code=400, detail=error_msg)
+
+    # 3. Hash new password and update user
+    current_user.password_hash = hash_password(payload.newPassword)
+    current_user.must_change_password = False
+    db.commit()
+
+    # 4. Invalidate all OTHER sessions for this user, keeping current session valid
+    tokens_to_delete = [
+        t for t, s in _sessions.items()
+        if s.get("user_id") == current_user.id and t != current_token
+    ]
+    for t in tokens_to_delete:
+        _sessions.pop(t, None)
+
+    # 5. Audit successful password change (never log plain passwords)
+    log_event(
+        db,
+        current_user.id,
+        "CHANGE_PASSWORD",
+        "SUCCESS",
+        "Password changed successfully",
+    )
+
+    return {"message": "Password changed successfully"}

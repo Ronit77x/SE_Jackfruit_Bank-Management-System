@@ -9,6 +9,8 @@ htmlcov/
 
 # Local data and secrets
 *.db
+*.db-wal
+*.db-shm
 *.sqlite3
 .env
 

@@ -4,14 +4,14 @@ import secrets
 import threading
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.constants import MAX_FAILED_LOGINS, ROLE_ADMIN, USER_ACTIVE, USER_LOCKED
 from app.database import get_db
 from app.models import User
-from app.deps import require_roles
+from app.deps import get_authorization_header, require_roles
 from app.security import hash_password, verify_password
 from app.services.audit_service import log_event
 from app.sessions import _sessions
@@ -119,7 +119,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/logout")
-def logout(authorization: str | None = Header(default=None)):
+def logout(authorization: str | None = Depends(get_authorization_header)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=401,

@@ -130,7 +130,8 @@ def add_transaction_notification(db: Session, account: Account, txn_type: str, a
 # Transaction history (BMS-F-023) and statement (BMS-F-024). All dates are India Standard Time days.
 # ---------------------------------------------------------------------------------------------------------------
 MINI_STATEMENT_SIZE = 10
-HISTORY_LIMIT = 1000
+DEFAULT_PAGE_SIZE = 100
+MAX_PAGE_SIZE = 1000  # largest page the history endpoint returns; the statement download has NO limit
 
 
 def bank_day_start_utc(day: date) -> datetime:
@@ -152,12 +153,16 @@ def list_history(
     date_from: date | None = None,
     date_to: date | None = None,
     newest_first: bool = True,
+    limit: int | None = None,
+    offset: int = 0,
 ):
-    """Returns (account, transactions, is_mini_statement).
+    """Returns (account, transactions, is_mini_statement, total).
 
-    Without dates: the latest 10 transactions (the mini-statement). With dates: every transaction from the start
-    of `date_from` to the end of `date_to` (both included, India time), at most HISTORY_LIMIT rows.
-    A Customer may only read their own accounts (403), an unknown account is 404, from > to is 400.
+    Without dates: the latest 10 transactions (the mini-statement); `total` is the number of all transactions.
+    With dates: the transactions from the start of `date_from` to the end of `date_to` (both included, India time);
+    `total` is how many there are in that range. `limit`/`offset` select a page of them; `limit=None` returns ALL of
+    them, which the statement download uses so that its totals always cover the complete period.
+    A Customer may only read their own accounts (403), an unknown account is 404, a bad range is 400.
     """
     account = _get_account(db, account_number)
     if enforce_owner and account.customer_id != owner_customer_id:
@@ -167,18 +172,24 @@ def list_history(
     if date_from and date_to and date_from > date_to:
         raise AppError(400, "INVALID_RANGE", "The from date must not be after the to date.")
 
-    query = select(Transaction).where(Transaction.account_id == account.id)
+    conditions = [Transaction.account_id == account.id]
     mini = date_from is None
     if not mini:
-        query = query.where(
+        conditions += [
             Transaction.created_at >= bank_day_start_utc(date_from),
             Transaction.created_at < bank_day_start_utc(date_to) + timedelta(days=1),
-        )
+        ]
+    total = db.scalar(select(func.count()).select_from(Transaction).where(*conditions))
+
     ordering = (Transaction.created_at.desc(), Transaction.id.desc()) if newest_first else (
         Transaction.created_at.asc(), Transaction.id.asc()
     )
-    rows = list(db.scalars(query.order_by(*ordering).limit(MINI_STATEMENT_SIZE if mini else HISTORY_LIMIT)))
-    return account, rows, mini
+    query = select(Transaction).where(*conditions).order_by(*ordering)
+    if mini:
+        query = query.limit(MINI_STATEMENT_SIZE)
+    elif limit is not None:
+        query = query.limit(limit).offset(offset)
+    return account, list(db.scalars(query)), mini, total
 
 
 def _csv_safe(text: str) -> str:

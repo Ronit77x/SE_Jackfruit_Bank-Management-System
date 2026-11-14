@@ -148,3 +148,107 @@ def test_spreadsheet_formulas_are_neutralised():
     assert service._csv_safe("=1+1") == "'=1+1"
     assert service._csv_safe("@cmd") == "'@cmd"
     assert service._csv_safe("Deposit") == "Deposit"
+
+
+# ---------- large accounts: nothing may be cut off silently ----------
+def make_many(db, acct, credits=1000, debits=500):
+    """1,500 transactions today (India time): `credits` deposits of Rs 2 and `debits` withdrawals of Rs 3."""
+    start = service.bank_day_start_utc(today_ist())
+    rows = []
+    for i in range(credits + debits):
+        is_credit = i < credits
+        rows.append(
+            Transaction(
+                account_id=acct.id,
+                type="Deposit" if is_credit else "Withdrawal",
+                amount=Decimal("2") if is_credit else Decimal("3"),
+                balance_after=Decimal("50000"),
+                receipt_no=f"BULK-{i}",
+                created_at=start + timedelta(seconds=i),
+            )
+        )
+    db.add_all(rows)
+    db.commit()
+    return credits, debits
+
+
+def test_statement_of_more_than_1000_transactions_is_complete_and_accurate(client, db):
+    customer, acct = make_account(db)
+    make_many(db, acct)
+    act_as("Customer", customer_id=customer.id)
+    day = today_ist().isoformat()
+    response = client.get(f"/accounts/{acct.account_number}/statement", params={"from": day, "to": day})
+    assert response.status_code == 200
+    rows = parse(response.text)
+    totals = {row[0]: row[1] for row in rows if len(row) == 2}
+    assert int(totals["Number of transactions"]) == 1500
+    assert Decimal(totals["Total credits (Rs)"]) == Decimal("2000.00")  # 1,000 x Rs 2
+    assert Decimal(totals["Total debits (Rs)"]) == Decimal("1500.00")   # 500 x Rs 3
+    data_rows = [r for r in rows if len(r) == 6 and r[0][:2] == "20"]
+    assert len(data_rows) == 1500  # every transaction is listed, none dropped
+
+
+def test_history_is_paged_and_says_how_many_there_are(client, db):
+    customer, acct = make_account(db)
+    make_many(db, acct)
+    act_as("Customer", customer_id=customer.id)
+    day = today_ist().isoformat()
+    url = f"/accounts/{acct.account_number}/transactions"
+
+    first = client.get(url, params={"from": day, "to": day, "limit": 100}).json()
+    assert (first["total"], first["count"], first["hasMore"]) == (1500, 100, True)
+
+    last = client.get(url, params={"from": day, "to": day, "limit": 100, "offset": 1400}).json()
+    assert (last["count"], last["hasMore"]) == (100, False)
+
+    ids = []
+    offset = 0
+    while True:
+        page = client.get(url, params={"from": day, "to": day, "limit": 1000, "offset": offset}).json()
+        ids += [t["transactionId"] for t in page["transactions"]]
+        if not page["hasMore"]:
+            break
+        offset += 1000
+    assert len(ids) == len(set(ids)) == 1500  # the pages together cover everything exactly once
+
+
+def test_page_parameters_are_validated(client, db):
+    customer, acct = make_account(db)
+    act_as("Customer", customer_id=customer.id)
+    day = today_ist().isoformat()
+    url = f"/accounts/{acct.account_number}/transactions"
+    for params in ({"limit": 0}, {"limit": 1001}, {"offset": -1}):
+        assert client.get(url, params={"from": day, "to": day, **params}).status_code == 400
+
+
+def test_mini_statement_reports_that_more_transactions_exist(client, db):
+    customer, acct = make_account(db)
+    make_many(db, acct, credits=15, debits=0)
+    act_as("Customer", customer_id=customer.id)
+    body = client.get(f"/accounts/{acct.account_number}/transactions").json()
+    assert (body["miniStatement"], body["count"], body["total"], body["hasMore"]) == (True, 10, 15, True)
+
+
+# ---------- audit of statement downloads ----------
+def test_statement_download_is_audited_with_the_masked_account_only(client, db):
+    from app.models import AuditLog
+
+    customer, acct = make_account(db)
+    make_activity(db, acct)
+    act_as("Customer", customer_id=customer.id, user_id=42)
+    day = today_ist().isoformat()
+    assert client.get(f"/accounts/{acct.account_number}/statement", params={"from": day, "to": day}).status_code == 200
+    (entry,) = db.query(AuditLog).filter_by(action="STATEMENT_DOWNLOAD").all()
+    assert entry.user_id == 42 and entry.outcome == "SUCCESS"
+    assert acct.account_number not in entry.details and acct.account_number[-4:] in entry.details
+    assert "rows 3" in entry.details
+
+
+def test_a_denied_download_is_not_recorded_as_a_download(client, db):
+    from app.models import AuditLog
+
+    customer, acct = make_account(db)
+    act_as("Customer", customer_id=customer.id + 99)
+    day = today_ist().isoformat()
+    assert client.get(f"/accounts/{acct.account_number}/statement", params={"from": day, "to": day}).status_code == 403
+    assert db.query(AuditLog).filter_by(action="STATEMENT_DOWNLOAD").count() == 0

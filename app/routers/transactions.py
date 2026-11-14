@@ -15,6 +15,7 @@ from app.constants import ROLE_CUSTOMER, ROLE_TELLER
 from app.database import get_db
 from app.deps import require_roles
 from app.services import transaction_service as service
+from app.services.audit_service import log_event
 
 router = APIRouter(tags=["transactions"])
 
@@ -94,7 +95,11 @@ class HistoryItem(BaseModel):
 class HistoryResponse(BaseModel):
     account: str
     miniStatement: bool
-    count: int
+    total: int          # all transactions in the range (or of the account for the mini-statement)
+    count: int          # how many are in this response
+    limit: int | None
+    offset: int
+    hasMore: bool       # true when more transactions exist beyond this page
     transactions: list[HistoryItem]
 
 
@@ -103,17 +108,28 @@ def history(
     account_number: PathAccount,
     date_from: date | None = Query(default=None, alias="from"),
     date_to: date | None = Query(default=None, alias="to"),
+    limit: int = Query(default=service.DEFAULT_PAGE_SIZE, ge=1, le=service.MAX_PAGE_SIZE),
+    offset: int = Query(default=0, ge=0),
     user=Depends(require_roles(ROLE_CUSTOMER)),
     db: Session = Depends(get_db),
 ):
-    """Latest 10 transactions, or every transaction between `from` and `to` (YYYY-MM-DD, India time)."""
-    account, rows, mini = service.list_history(
-        db, account_number, getattr(user, "customer_id", None), True, date_from, date_to
+    """Latest 10 transactions, or the transactions between `from` and `to` (YYYY-MM-DD, India time), page by page.
+
+    A date range with more than `limit` transactions is returned in pages: `total` says how many there are and
+    `hasMore` tells whether to ask for the next page with a larger `offset`. Nothing is dropped silently.
+    """
+    account, rows, mini, total = service.list_history(
+        db, account_number, getattr(user, "customer_id", None), True, date_from, date_to, limit=limit, offset=offset
     )
+    has_more = total > len(rows) if mini else offset + len(rows) < total
     return HistoryResponse(
         account=service.mask_account_number(account.account_number),
         miniStatement=mini,
+        total=total,
         count=len(rows),
+        limit=None if mini else limit,
+        offset=0 if mini else offset,
+        hasMore=has_more,
         transactions=[
             HistoryItem(
                 transactionId=row.id,
@@ -141,10 +157,21 @@ def statement(
     """Statement for a date range as a CSV file. Only format=csv is available."""
     if file_format.lower() != "csv":
         raise service.AppError(400, "UNSUPPORTED_FORMAT", "Only format=csv is available.")
-    account, rows, _ = service.list_history(
-        db, account_number, getattr(user, "customer_id", None), True, date_from, date_to, newest_first=False
+    # limit=None: the statement contains EVERY transaction of the period, so its totals are always complete.
+    account, rows, _, total = service.list_history(
+        db, account_number, getattr(user, "customer_id", None), True, date_from, date_to, newest_first=False, limit=None
     )
     text, _, _ = service.build_statement_csv(account, rows, date_from, date_to)
+    try:  # downloading a statement is recorded (BMS-SR-006); only the masked account number is written
+        log_event(
+            db,
+            getattr(user, "id", None),
+            "STATEMENT_DOWNLOAD",
+            "SUCCESS",
+            f"account {service.mask_account_number(account.account_number)} period {date_from} to {date_to} rows {len(rows)}",
+        )
+    except Exception:  # an audit problem must not stop the customer from getting the statement
+        db.rollback()
     last4 = account.account_number[-4:]
     filename = f"statement-{last4}-{date_from.isoformat()}-{date_to.isoformat()}.csv"
     return Response(

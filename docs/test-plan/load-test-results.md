@@ -1,44 +1,48 @@
-# Load test results (BMS-NF-001, TC-Perf-01)
+# Integrated transaction load test (BMS-NF-001, TC-Perf-01)
 
-**Requirement:** 95 % of deposit, withdrawal and transfer requests complete within 3 seconds with 50 concurrent users.
+Target: at least 95% of deposit, withdrawal and transfer requests complete within 3 seconds with 50 users.
 
+## Tested source and environment
 
-| Item | Value |
-|---|---|
-| Date and time of the run | 07-11-2026 14:17:51 |
-| Machine (CPU, RAM, operating system) | HP OMEN Gaming Laptop 16-wf0xxx; 13th Gen Intel Core i9-13900HX; 14,710,988,800 bytes RAM (13.7 GiB); Microsoft Windows 11 |
-| Commit tested (`git rev-parse --short HEAD`) | 3eabcc9 |
-| Command | `locust -f tests/load/locustfile.py --headless -u 50 -r 10 -t 2m --host http://127.0.0.1:8000 --csv docs/test-plan/load-test` |
-| Users / ramp-up / duration | 50 / 10 per second / 2 minutes |
-| Database | SQLite (WAL mode) |
+Application source commit: `e86d5d7d396d3d77e2b80a0cae0007ca0690d725`. This local integration includes PR #63 head `f8a234b46a2bb2877ec8530bc4f0d58bcdc72bdc` and PR #64 head `808c835ba6ab15d8d3f8e49e58b69d3f8ea503d9`. Merge these PRs before #65. Later evidence-only commits do not change the application or workload.
 
-## Results (from `docs/test-plan/load-test_stats.csv`)
+Run date: 15 November 2026 (local time). Windows 11 build 26200, Intel64 Family 6 Model 183 Stepping 1, 32 logical CPUs; Python 3.12.14 and Locust 2.47.0. See [exact dependencies](load-test-requirements.txt) and [configuration manifest](load-test-manifest.json).
 
-| Endpoint | Requests | Failures | Median (ms) | 95th percentile (ms) |
-|---|---|---|---|---|
-| /transactions/deposit | 2598 | 0 | 21 | 63 |
-| /transactions/withdraw | 1657 | 0 | 23 | 67 |
-| /transactions/transfer | 4292 | 0 | 23 | 66 |
-| **Aggregated** | 8547 | 0 | 23 | 65 |
+- 50 users: 25 Tellers and 25 Customers; spawn rate 10 users/second.
+- Duration: 120 seconds, including ramp-up and login. Login latency is excluded from transaction statistics.
+- All 50 users authenticated successfully; no login failures.
+- Fresh isolated SQLite database, verified WAL, 30,000 ms busy timeout, pool 5 + 10.
+- Single API process and local HTTP; Rs 1 per transaction. Transaction notification creation is enabled.
 
-**Verdict: PASS — BMS-NF-001 satisfied.**
+## Results
 
-The aggregated 95th-percentile response time was 65 ms, below the required 3000 ms threshold. All 8547 measured requests completed without reported failures.
+| Endpoint | Requests | Failures | Median (ms) | p95 (ms) |
+|---|---:|---:|---:|---:|
+| /transactions/deposit | 1,888 | 0 | 310 | 480 |
+| /transactions/transfer | 3,190 | 0 | 310 | 480 |
+| /transactions/withdraw | 1,214 | 0 | 310 | 500 |
+| Aggregated | 6,292 | 0 | 310 | 490 |
 
-## Notes
+**Result: PASS for this measured local workload.** Every endpoint p95 was below 3,000 ms, with zero transaction failures and zero pool timeout tracebacks. This is a short local observation, not a production performance guarantee. Locust percentile estimates are rounded histogram values, not maximum response times.
 
-- Login requests were excluded from the measured statistics because BMS-NF-001 specifically evaluates deposit, withdrawal and transfer performance.
-- The test used SQLite in WAL mode with the API server and Locust running locally.
-- All 8,547 measured requests completed with zero reported failures.
-- The aggregate median response time was 23 ms, and the 95th-percentile response time was 65 ms.
-- The maximum observed response time was approximately 659 ms.
-- The test met the requirement of completing at least 95% of requests within 3,000 ms.
-- No application errors were reported by Locust during the measured run.
-- The results reflect a local test environment and may differ under production network conditions or sustained workloads.
+The [CSV statistics](load-test_stats.csv), [user-count history](load-test_stats_history.csv), [failures](load-test_failures.csv), [exceptions](load-test_exceptions.csv) and [server log](load-test-server.log) retain the supporting evidence. CSV line endings are normalized for Git without changing nonempty records.
 
-## Limitations
+## Post-run integrity checks
 
-- The test was performed locally, with the API server and load generator running on the same machine.
-- Authentication requests were excluded from performance measurements.
-- All transactions used a fixed amount of Rs. 1.
-- Results may vary under production network conditions and longer workloads.
+Read-only inspection reconciled all 10 account balances with their seeded values plus the full transaction ledger. There were 9,482 transaction rows and 9,482 notification rows. Deposit, withdrawal and transfer audit counts matched the successful request counts. Transfers have separate debit and credit rows. See [ledger check results](load-test-ledger-check.json).
+
+The seed balance is 10,000 times customer index for Savings and 20,000 + 5,000 times index for Current (indices 1-5). For each account, the check adds Deposit/TransferIn amounts and subtracts Withdrawal/TransferOut amounts. It also compares request counts to transaction types, notification count to total transaction rows, and successful audit counts to requests.
+
+## Reproduce
+
+Use an environment with `requirements.txt` and `locust==2.47.0`, then run from the committed repository root:
+
+```powershell
+python tests/load/run_pool_experiment.py --output "$env:TEMP\bms-integrated-load-new-run" --configurations R3 --repeats 1
+```
+
+Choose a new output directory. The runner uses an isolated database and throwaway key, verifies settings, records login counts and stops its own server. Its normal default still runs the 12 comparison runs documented for PR #63.
+
+## Limits
+
+One two-minute local run includes ramp-up and authentication startup; the full window is not steady-state traffic from 50 fully authenticated users. The server and generator share a normal-use workstation. This does not measure deployed HTTPS/network overhead, production capacity, longer workloads or monthly availability. Final release integration changes require fresh validation. The earlier 7 November results have been replaced because they did not test this combined application.

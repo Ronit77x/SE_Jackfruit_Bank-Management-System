@@ -1,0 +1,23 @@
+{
+  "source_commit": "e86d5d7d396d3d77e2b80a0cae0007ca0690d725",
+  "accounts_reconciled": 10,
+  "transaction_counts": {
+    "Deposit": 1888,
+    "Withdrawal": 1214,
+    "TransferOut": 3190,
+    "TransferIn": 3190
+  },
+  "transaction_rows": 9482,
+  "notification_rows": 9482,
+  "successful_audit_counts": {
+    "DEPOSIT": 1888,
+    "LOGIN": 50,
+    "TRANSFER": 3190,
+    "WITHDRAWAL": 1214
+  },
+  "initial_total_balance": "325000.00",
+  "final_total_balance": "325674",
+  "all_account_balances_match_seed_plus_ledger": true,
+  "notification_count_matches_transaction_rows": true,
+  "note": "Read-only check of the disposable benchmark database. TransferIn/Out pairs count as two rows for one request."
+}

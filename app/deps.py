@@ -1,7 +1,8 @@
 """Shared authentication and role-check dependencies."""
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.constants import SESSION_IDLE_MINUTES
@@ -11,8 +12,24 @@ from app.services.audit_service import log_event
 from app.sessions import _sessions
 
 
+_bearer = HTTPBearer(
+    auto_error=False,
+    scheme_name="BearerAuth",
+    description="Log in through POST /auth/login, then paste the returned token here.",
+)
+
+
+def get_authorization_header(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+) -> str | None:
+    """Expose Bearer authentication in OpenAPI while retaining our existing 401 errors."""
+    if credentials is None:
+        return None
+    return f"{credentials.scheme} {credentials.credentials}"
+
+
 def get_current_user(
-    authorization: str | None = Header(default=None),
+    authorization: str | None = Depends(get_authorization_header),
     db: Session = Depends(get_db),
 ):
     """Return the database user associated with a valid Bearer token."""

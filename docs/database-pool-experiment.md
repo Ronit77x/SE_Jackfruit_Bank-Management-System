@@ -67,7 +67,7 @@ Updated database module SHA-256: `6ae35883d8bb204c0e007783485db70acd5a0b73bf4e9b
 
 All 36 per-endpoint p95 measurements were below 3,000 ms. These are Locust histogram estimates, not maximum response times; some individual requests exceeded three seconds. The load generator and server ran on the same normal-use workstation. No claim of statistical significance or production capacity follows from three short runs.
 
-**Reviewable evidence:** [results and configuration manifest](test-plan/pool-experiment/results.json), [per-endpoint summary](test-plan/pool-experiment/endpoint-summary.csv), [server logs](test-plan/pool-experiment/server-logs.txt), and the twelve `*_stats.csv` / `*_stats_history.csv` pairs in [pool-experiment](test-plan/pool-experiment/). History CSVs record the ramp to 50 users. Original complete output, disposable databases and unabridged Locust logs remain in the external benchmark folder; no encryption keys or tokens are included in committed evidence.
+**Reviewable evidence:** [results and configuration manifest](test-plan/pool-experiment/results.json), [per-endpoint summary](test-plan/pool-experiment/endpoint-summary.csv), [server logs](test-plan/pool-experiment/server-logs.txt), and the twelve `*_stats.csv` / `*_stats_history.csv` pairs in [pool-experiment](test-plan/pool-experiment/). History CSVs record the ramp to 50 users. Committed CSV line endings are normalized for Git; all nonempty CSV records are preserved unchanged. Original complete output, disposable databases and unabridged Locust logs remain in the external benchmark folder; no encryption keys or tokens are included in committed evidence.
 
 Earlier Claude sandbox numbers were removed because their raw evidence is unavailable. The measurements above replace them.
 

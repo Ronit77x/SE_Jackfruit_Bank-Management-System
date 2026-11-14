@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bank Management System - Cash</title>
+  <link rel="stylesheet" href="/ui/css/style.css">
+</head>
+<body>
+  <header id="site-header" class="site"></header>
+  <main>
+    <section class="card">
+      <h2>Cash deposit and withdrawal</h2>
+      <form id="cash-form" autocomplete="off">
+        <div class="row two">
+          <div>
+            <label for="account">Account number (10 digits)</label>
+            <input id="account" name="account" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" required>
+          </div>
+          <div>
+            <label for="amount">Amount (Rs)</label>
+            <input id="amount" name="amount" inputmode="decimal" pattern="[0-9]+(\.[0-9]{1,2})?" required>
+          </div>
+        </div>
+        <button type="submit" id="deposit-button" data-action="deposit">Deposit</button>
+        <button type="submit" id="withdraw-button" data-action="withdraw" class="secondary">Withdraw</button>
+      </form>
+      <div id="cash-message" class="message" role="alert"></div>
+      <p class="muted">Deposits up to Rs 2,00,000. Withdrawals keep the minimum balance (Rs 1,000 Savings, Rs 5,000 Current) and are limited to Rs 50,000 per account per day.</p>
+    </section>
+  </main>
+  <script src="/ui/js/api.js"></script>
+  <script>
+    (function () {
+      if (!bms.requireRole(["Teller"])) { return; }
+      bms.header("Cash");
+      var form = document.getElementById("cash-form");
+      var message = document.getElementById("cash-message");
+      var action = "deposit";
+
+      Array.prototype.forEach.call(form.querySelectorAll("button[data-action]"), function (button) {
+        button.addEventListener("click", function () { action = button.getAttribute("data-action"); });
+      });
+
+      form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        bms.hide(message);
+        var path = action === "withdraw" ? "/transactions/withdraw" : "/transactions/deposit";
+        try {
+          var result = await bms.post(path, { accountId: form.account.value.trim(), amount: form.amount.value.trim() });
+          var text = (action === "withdraw" ? "Withdrawal" : "Deposit") + " recorded. Receipt " + result.receiptNo +
+                     ". New balance: " + bms.money(result.balance) + ".";
+          bms.show(message, text, true);
+          form.amount.value = "";
+        } catch (error) {
+          bms.show(message, error.message, false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

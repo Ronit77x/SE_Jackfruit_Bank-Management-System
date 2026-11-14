@@ -6,11 +6,14 @@ Planned endpoints (baseline Part A section 3):
   GET   /admin/audit-logs           filter by user, action, date
   GET   /admin/reports/daily        daily transaction summary
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import date, datetime, time, timedelta, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy.orm import Session
 
-from app.constants import ROLE_TELLER, USER_ACTIVE, USER_INACTIVE, USER_LOCKED
+from app import crud
+from app.constants import ROLE_ADMIN, ROLE_TELLER, USER_ACTIVE, USER_INACTIVE, USER_LOCKED
 from app.database import get_db
 from app.deps import require_roles
 from app.models import User
@@ -18,6 +21,63 @@ from app.security import hash_password
 from app.services.audit_service import log_event
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+class AuditLogResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    timestamp: datetime
+    user_id: int | None
+    action: str
+    outcome: str
+    details: str
+
+
+def _ist_day_boundary(value: str, *, end: bool) -> datetime:
+    """Convert an IST calendar boundary to the UTC-naive form used by SQLite."""
+    try:
+        calendar_date = date.fromisoformat(value)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Date must be in YYYY-MM-DD format") from exc
+
+    boundary = datetime.combine(calendar_date, time.max if end else time.min, tzinfo=timezone(timedelta(hours=5, minutes=30)))
+    return boundary.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+@router.get("/audit-logs", response_model=list[AuditLogResponse])
+def list_audit_logs(
+    user_id: str | None = Query(default=None),
+    action: str | None = Query(default=None),
+    date_from: str | None = Query(default=None, alias="from"),
+    date_to: str | None = Query(default=None, alias="to"),
+    limit: str = Query(default="100"),
+    db: Session = Depends(get_db),
+    admin=Depends(require_roles(ROLE_ADMIN)),
+):
+    try:
+        parsed_user_id = int(user_id) if user_id is not None else None
+        parsed_limit = int(limit)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail="user_id and limit must be integers") from exc
+    if parsed_user_id is not None and parsed_user_id < 1:
+        raise HTTPException(status_code=422, detail="user_id must be at least 1")
+    if parsed_limit < 1 or parsed_limit > 500:
+        raise HTTPException(status_code=422, detail="limit must be between 1 and 500")
+
+    start = _ist_day_boundary(date_from, end=False) if date_from is not None else None
+    finish = _ist_day_boundary(date_to, end=True) if date_to is not None else None
+    if start is not None and finish is not None and start > finish:
+        raise HTTPException(status_code=422, detail="from date must not be after to date")
+
+    return crud.list_audit_logs(
+        db,
+        user_id=parsed_user_id,
+        action=action,
+        date_from=start,
+        date_to=finish,
+        limit=parsed_limit,
+    )
 
 
 class TellerCreate(BaseModel):

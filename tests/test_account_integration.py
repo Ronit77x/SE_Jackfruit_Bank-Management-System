@@ -5,11 +5,66 @@ import pytest
 from cryptography.fernet import Fernet
 from sqlalchemy import event
 
-from app.models import Account, AuditLog, Customer, Transaction, User
+from app.models import Account, AuditLog, Customer, Notification, Transaction, User
 from app.security import decrypt_value
 from app.services import account_service
 from tests.factories import create_account, create_user
 from tests.test_accounts import new_customer_payload
+
+
+@pytest.mark.parametrize("account_type,deposit", [("Savings", "1000.00"), ("Current", "5000.00")])
+def test_open_account_creates_opening_deposit_notification_with_real_login(client, db, account_type, deposit):
+    headers = teller_headers(client, db)
+    response = client.post("/accounts", headers=headers,
+                           json=new_customer_payload(account_type, deposit))
+    assert response.status_code == 201
+    body = response.json()
+    note = db.query(Notification).filter_by(customer_id=body["customer_id"]).one()
+    transaction = db.query(Transaction).filter_by(account_id=body["account_id"]).one()
+    assert transaction.type == "OpeningDeposit" and transaction.amount == Decimal(deposit)
+    assert note.status == "LOGGED"
+    assert note.message.startswith("Opening deposit of Rs " + f"{Decimal(deposit):,.2f}")
+    assert "Rs " + f"{Decimal(deposit):,.2f}" in note.message
+    assert body["account_number"] not in note.message
+    assert "******" + body["account_number"][-4:] in note.message
+    assert body["temporary_password"] not in note.message
+    assert "TEST-ID-001" not in note.message
+
+
+def test_opening_existing_customers_next_account_also_creates_notification(client, db):
+    headers = teller_headers(client, db)
+    first = client.post("/accounts", headers=headers, json=new_customer_payload()).json()
+    response = client.post("/accounts", headers=headers, json={
+        "customer_id": first["customer_id"], "account_type": "Current", "deposit": "5000.00",
+    })
+    assert response.status_code == 201
+    assert "temporary_password" not in response.json()
+    assert db.query(Notification).filter_by(customer_id=first["customer_id"]).count() == 2
+    assert db.query(User).filter_by(customer_id=first["customer_id"]).count() == 1
+
+
+@pytest.mark.parametrize("existing_customer", [False, True])
+def test_notification_storage_failure_rolls_back_the_whole_account_opening(client, db, existing_customer):
+    headers = teller_headers(client, db)
+    payload = new_customer_payload()
+    if existing_customer:
+        account = create_account(db)
+        payload = {"customer_id": account.customer_id, "account_type": "Savings", "deposit": "1000.00"}
+    models = (Customer, Account, Transaction, User, AuditLog, Notification)
+    before = [db.query(model).count() for model in models]
+
+    def reject_notification(session, flush_context, instances):
+        if any(isinstance(row, Notification) for row in session.new):
+            raise RuntimeError("simulated notification storage failure")
+
+    event.listen(db, "before_flush", reject_notification)
+    try:
+        response = client.post("/accounts", headers=headers, json=payload)
+    finally:
+        event.remove(db, "before_flush", reject_notification)
+    assert response.status_code == 500
+    assert "simulated" not in response.text
+    assert [db.query(model).count() for model in models] == before
 
 
 @pytest.fixture(autouse=True)
@@ -63,6 +118,7 @@ def test_audit_write_failure_rolls_back_customer_account_login_and_deposit(clien
     assert db.query(Transaction).count() == 0
     assert db.query(User).filter_by(role="Customer").count() == 0
     assert db.query(AuditLog).filter_by(action="ACCOUNT_OPENED").count() == 0
+    assert db.query(Notification).count() == 0
 
 
 def test_account_number_unique_constraint_collision_retries_without_losing_customer(client, db, monkeypatch):

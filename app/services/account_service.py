@@ -18,6 +18,7 @@ from app.constants import (
 )
 from app.models import Account, AuditLog, Customer, Transaction, User
 from app.security import encrypt_value, hash_password
+from app.services import transaction_service
 
 
 def open_account(
@@ -119,6 +120,9 @@ def open_account(
             balance_after=deposit,
         )
         db.add(transaction)
+        transaction_service.add_transaction_notification(
+            db, account, TXN_OPENING_DEPOSIT, deposit,
+        )
 
         temporary_password = None
 

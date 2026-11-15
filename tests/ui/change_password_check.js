@@ -18,16 +18,26 @@ assert.ok(html.includes('id="current-password"'), "Page must have current-passwo
 assert.ok(html.includes('id="new-password"'), "Page must have new-password field");
 assert.ok(html.includes('id="confirm-password"'), "Page must have confirm-password field");
 assert.ok(html.includes('id="mandatory-notice"'), "Page must have mandatory-notice banner");
+assert.ok(/id="mandatory-notice"[^>]*hidden/.test(html), "mandatory-notice must have initial hidden attribute");
+assert.ok(!/id="mandatory-notice"[^>]*class="[^"]*\bshow\b[^"]*"/.test(html), "mandatory-notice initial HTML must not have show class");
 assert.ok(html.includes('id="change-message"'), "Page must have change-message element");
 assert.ok(html.includes('id="submit-btn"'), "Page must have submit-btn");
+assert.ok(html.includes('id="continue-btn"'), "Page must have continue-btn");
+assert.ok(html.includes('id="logout-btn"'), "Page must have logout-btn");
 assert.ok(html.includes('toggle-password'), "Page must have show/hide toggle buttons");
+
+// Check CSS [hidden] rule
+const cssPath = path.join(__dirname, "..", "..", "app", "static", "css", "style.css");
+const css = fs.readFileSync(cssPath, "utf8");
+assert.ok(css.includes("[hidden]"), "CSS must contain [hidden] rule");
+assert.ok(css.includes("display: none !important"), "CSS [hidden] must specify display: none !important");
 
 // Helper to create simulated DOM elements
 function createFakeElement(tagName, id = "", className = "") {
   const listeners = {};
   const attrs = {};
   const children = [];
-  return {
+  const el = {
     tagName: tagName.toUpperCase(),
     id,
     className,
@@ -55,6 +65,20 @@ function createFakeElement(tagName, id = "", className = "") {
     appendChild(child) { children.push(child); },
     replaceChildren() { children.length = 0; },
   };
+  el.classList = {
+    add: (...tokens) => {
+      const parts = new Set((el.className || "").split(/\s+/).filter(Boolean));
+      tokens.forEach((t) => parts.add(t));
+      el.className = Array.from(parts).join(" ");
+    },
+    remove: (...tokens) => {
+      const parts = new Set((el.className || "").split(/\s+/).filter(Boolean));
+      tokens.forEach((t) => parts.delete(t));
+      el.className = Array.from(parts).join(" ");
+    },
+    contains: (token) => (el.className || "").split(/\s+/).includes(token),
+  };
+  return el;
 }
 
 // Helper to simulate the page environment
@@ -104,7 +128,7 @@ function setupPageContext({ token = "test-token", role = "Customer", mustChange 
   const toggleConfirm = createFakeElement("button", "toggle-conf", "secondary toggle-password");
   toggleConfirm.setAttribute("data-target", "confirm-password");
 
-  const mandatoryNotice = createFakeElement("div", "mandatory-notice", "message show error");
+  const mandatoryNotice = createFakeElement("div", "mandatory-notice", "message error");
   mandatoryNotice.setAttribute("hidden", "");
 
   const changeMessage = createFakeElement("div", "change-message", "message");
@@ -112,6 +136,8 @@ function setupPageContext({ token = "test-token", role = "Customer", mustChange 
   const successActions = createFakeElement("div", "success-actions");
   successActions.setAttribute("hidden", "");
   const continueBtn = createFakeElement("button", "continue-btn");
+  const logoutBtn = createFakeElement("button", "logout-btn", "secondary");
+  logoutBtn.setAttribute("hidden", "");
 
   const elementsById = {
     "site-header": siteHeader,
@@ -124,6 +150,7 @@ function setupPageContext({ token = "test-token", role = "Customer", mustChange 
     "submit-btn": submitBtn,
     "success-actions": successActions,
     "continue-btn": continueBtn,
+    "logout-btn": logoutBtn,
   };
 
   const allToggles = [toggleCurrent, toggleNew, toggleConfirm];
@@ -184,6 +211,7 @@ function setupPageContext({ token = "test-token", role = "Customer", mustChange 
     changeMessage,
     submitBtn,
     continueBtn,
+    logoutBtn,
     calls,
     setNextResponse: (r) => { nextResponse = r; },
     runScript,
@@ -203,7 +231,8 @@ function setupPageContext({ token = "test-token", role = "Customer", mustChange 
     const page = setupPageContext({ mustChange: "false" });
     page.runScript();
     assert.strictEqual(page.window.location.href, "/ui/change-password.html");
-    assert.ok(page.mandatoryNotice.getAttribute("hidden") !== null);
+    assert.ok(page.mandatoryNotice.getAttribute("hidden") !== null, "Normal user: notice must have hidden attribute");
+    assert.strictEqual(page.mandatoryNotice.classList.contains("show"), false, "Normal user: notice must not have show class");
   }
 
   // 3. User with mandatory password change shows notice banner
@@ -211,7 +240,8 @@ function setupPageContext({ token = "test-token", role = "Customer", mustChange 
     const page = setupPageContext({ mustChange: "true" });
     page.runScript();
     assert.strictEqual(page.window.location.href, "/ui/change-password.html");
-    assert.strictEqual(page.mandatoryNotice.getAttribute("hidden"), null);
+    assert.strictEqual(page.mandatoryNotice.getAttribute("hidden"), null, "Mandatory user: notice must not have hidden attribute");
+    assert.strictEqual(page.mandatoryNotice.classList.contains("show"), true, "Mandatory user: notice must have show class");
   }
 
   // 4. Show/hide toggle button toggles input type
@@ -374,8 +404,14 @@ function setupPageContext({ token = "test-token", role = "Customer", mustChange 
     assert.strictEqual(page.form.newPassword.disabled, true);
     // Success feedback is shown
     assert.ok(page.changeMessage.textContent.includes("Password changed successfully"));
+    // Notice banner is hidden on success
+    assert.ok(page.mandatoryNotice.getAttribute("hidden") !== null, "Notice must have hidden attribute after change");
+    assert.strictEqual(page.mandatoryNotice.classList.contains("show"), false, "Notice must not have show class after change");
     // must_change session flag is updated to false
     assert.strictEqual(page.store.bms_must_change, "false");
+    // Continue button is visible, logout button is hidden
+    assert.strictEqual(page.continueBtn.getAttribute("hidden"), null, "Continue button visible for Customer");
+    assert.ok(page.logoutBtn.getAttribute("hidden") !== null, "Logout button hidden for Customer");
     // Destination is customer dashboard
     assert.strictEqual(page.window.location.href, "/ui/customer.html");
   }
@@ -395,7 +431,108 @@ function setupPageContext({ token = "test-token", role = "Customer", mustChange 
     page.form.confirmPassword.value = "NewTeller2@";
     await page.form.dispatch("submit");
 
+    assert.strictEqual(page.continueBtn.getAttribute("hidden"), null, "Continue button visible for Teller");
+    assert.ok(page.logoutBtn.getAttribute("hidden") !== null, "Logout button hidden for Teller");
     assert.strictEqual(page.window.location.href, "/ui/teller-cash.html");
+  }
+
+  // 14. Successful password change for Admin remains on page with success message and logout action
+  {
+    const page = setupPageContext({ role: "Admin", mustChange: "false" });
+    page.setNextResponse({
+      ok: true,
+      status: 200,
+      headers: { get: () => "application/json" },
+      json: async () => ({ message: "Password changed successfully" }),
+    });
+    page.runScript();
+    page.form.currentPassword.value = "OldAdmin1!";
+    page.form.newPassword.value = "NewAdmin2@";
+    page.form.confirmPassword.value = "NewAdmin2@";
+    await page.form.dispatch("submit");
+
+    // Must remain on change-password.html (no auto-redirect to /docs or /ui/admin.html)
+    assert.strictEqual(page.window.location.href, "/ui/change-password.html");
+    assert.ok(page.changeMessage.textContent.includes("Password changed successfully"));
+    assert.ok(!page.changeMessage.textContent.includes("Redirecting"));
+    // Continue button must be hidden; working logout button must be visible
+    assert.ok(page.continueBtn.getAttribute("hidden") !== null, "Continue button must be hidden for Admin");
+    assert.strictEqual(page.logoutBtn.getAttribute("hidden"), null, "Logout button must be visible for Admin");
+  }
+
+  // 15. Admin logout action clears session state and navigates to login
+  {
+    const page = setupPageContext({ role: "Admin", mustChange: "false" });
+    page.setNextResponse({
+      ok: true,
+      status: 200,
+      headers: { get: () => "application/json" },
+      json: async () => ({ message: "Password changed successfully" }),
+    });
+    page.runScript();
+    page.form.currentPassword.value = "OldAdmin1!";
+    page.form.newPassword.value = "NewAdmin2@";
+    page.form.confirmPassword.value = "NewAdmin2@";
+    await page.form.dispatch("submit");
+
+    // Queue response for logout endpoint
+    page.setNextResponse({
+      ok: true,
+      status: 200,
+      headers: { get: () => "application/json" },
+      json: async () => ({ message: "Logged out" }),
+    });
+
+    // Click the logout button
+    await page.logoutBtn.dispatch("click");
+
+    // Verify session state is cleared
+    assert.strictEqual(page.store.bms_token, undefined);
+    assert.strictEqual(page.store.bms_role, undefined);
+    assert.strictEqual(page.store.bms_username, undefined);
+    assert.strictEqual(page.window.location.href, "/ui/index.html");
+  }
+
+  // 16. Mandatory-reset flow works for Admin role: banner shown, cleared, stays on page, logs out
+  {
+    const page = setupPageContext({ role: "Admin", mustChange: "true" });
+    page.setNextResponse({
+      ok: true,
+      status: 200,
+      headers: { get: () => "application/json" },
+      json: async () => ({ message: "Password changed successfully" }),
+    });
+    page.runScript();
+
+    // Mandatory notice initially visible
+    assert.strictEqual(page.mandatoryNotice.getAttribute("hidden"), null);
+    assert.strictEqual(page.mandatoryNotice.classList.contains("show"), true);
+
+    page.form.currentPassword.value = "OldTempAdmin1!";
+    page.form.newPassword.value = "NewStrongAdmin2@";
+    page.form.confirmPassword.value = "NewStrongAdmin2@";
+    await page.form.dispatch("submit");
+
+    // Banner is hidden after success
+    assert.ok(page.mandatoryNotice.getAttribute("hidden") !== null);
+    assert.strictEqual(page.mandatoryNotice.classList.contains("show"), false);
+    assert.strictEqual(page.store.bms_must_change, "false");
+
+    // Remains on page
+    assert.strictEqual(page.window.location.href, "/ui/change-password.html");
+    assert.ok(page.continueBtn.getAttribute("hidden") !== null);
+    assert.strictEqual(page.logoutBtn.getAttribute("hidden"), null);
+
+    // Logout works
+    page.setNextResponse({
+      ok: true,
+      status: 200,
+      headers: { get: () => "application/json" },
+      json: async () => ({ message: "Logged out" }),
+    });
+    await page.logoutBtn.dispatch("click");
+    assert.strictEqual(page.store.bms_token, undefined);
+    assert.strictEqual(page.window.location.href, "/ui/index.html");
   }
 
   console.log("change-password UI checks passed");

@@ -28,6 +28,7 @@ def test_change_password_page_is_served(client):
     assert 'id="change-message"' in resp.text
     assert 'id="submit-btn"' in resp.text
     assert 'id="continue-btn"' in resp.text
+    assert 'id="logout-btn"' in resp.text
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is not installed")
@@ -115,3 +116,100 @@ def test_first_login_mandatory_reset_flow(client, db):
         json={"username": "temp-cust-33", "password": "TempPass123!"},
     )
     assert old_login.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_mandatory_reset_banner_css_and_attributes(client):
+    """Verify that CSS enforces hidden elements with display: none !important, and that
+
+    the banner has the hidden attribute without the 'show' class in initial HTML.
+    """
+    css_resp = client.get("/ui/css/style.css")
+    assert css_resp.status_code == status.HTTP_200_OK
+    assert "[hidden]" in css_resp.text
+    assert "display: none !important" in css_resp.text
+
+    html_resp = client.get("/ui/change-password.html")
+    assert html_resp.status_code == status.HTTP_200_OK
+    assert 'id="mandatory-notice"' in html_resp.text
+    assert 'class="message error"' in html_resp.text
+    assert 'class="message show error"' not in html_resp.text
+
+
+def test_navigation_destinations_for_all_roles(client):
+    """Verify that Customer and Teller destinations exist and return 200 OK,
+
+    and verify that /ui/admin.html returns 404 while change-password.html keeps Admin
+    on the page with a working logout action rather than redirecting to /docs or /ui/admin.html.
+    """
+    # Customer destination
+    cust_resp = client.get("/ui/customer.html")
+    assert cust_resp.status_code == status.HTTP_200_OK
+
+    # Teller destination
+    teller_resp = client.get("/ui/teller-cash.html")
+    assert teller_resp.status_code == status.HTTP_200_OK
+
+    # Verify obsolete admin.html returns 404 (not invented or present)
+    obsolete_admin = client.get("/ui/admin.html")
+    assert obsolete_admin.status_code == status.HTTP_404_NOT_FOUND
+
+    # Verify change-password page contains the role-aware handling without Admin redirects
+    html_resp = client.get("/ui/change-password.html")
+    assert 'if (role === "Admin" || !dest)' in html_resp.text
+    assert 'continueBtn.setAttribute("hidden", "")' in html_resp.text
+    assert 'logoutBtn.removeAttribute("hidden")' in html_resp.text
+
+
+def test_admin_mandatory_reset_flow(client, db):
+    """Verify mandatory reset and logout flow for an Admin user."""
+    admin_user = create_user(
+        db,
+        username="temp-admin-33",
+        role="Admin",
+        password_hash=hash_password("TempAdmin123!"),
+        must_change_password=True,
+    )
+
+    # 1. Login returns mustChangePassword=True
+    login_resp = client.post(
+        "/auth/login",
+        json={"username": "temp-admin-33", "password": "TempAdmin123!"},
+    )
+    assert login_resp.status_code == status.HTTP_200_OK
+    token = login_resp.json()["token"]
+    assert login_resp.json()["mustChangePassword"] is True
+
+    # 2. Change password
+    change_resp = client.post(
+        "/auth/change-password",
+        json={"currentPassword": "TempAdmin123!", "newPassword": "NewAdminStrong1!"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert change_resp.status_code == status.HTTP_200_OK
+    assert change_resp.json()["message"] == "Password changed successfully"
+
+    # 3. must_change_password is False in DB
+    db.refresh(admin_user)
+    assert admin_user.must_change_password is False
+
+    # 4. Admin logout endpoint works and terminates session
+    logout_resp = client.post(
+        "/auth/logout",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert logout_resp.status_code == status.HTTP_200_OK
+
+    # 5. Old token is now invalidated
+    after_logout = client.get(
+        "/admin/audit-logs",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert after_logout.status_code == status.HTTP_401_UNAUTHORIZED
+
+    # 6. Relogin works with new password and mustChangePassword is False
+    relogin_resp = client.post(
+        "/auth/login",
+        json={"username": "temp-admin-33", "password": "NewAdminStrong1!"},
+    )
+    assert relogin_resp.status_code == status.HTTP_200_OK
+    assert relogin_resp.json()["mustChangePassword"] is False

@@ -11,16 +11,10 @@ from sqlalchemy.orm import Session
 from app.constants import MAX_FAILED_LOGINS, ROLE_ADMIN, USER_ACTIVE, USER_LOCKED
 from app.database import get_db
 from app.models import AuditLog, User
-from app.deps import get_current_user, require_roles
+from app.deps import get_authorization_header, get_current_user, require_roles
 from app.security import hash_password, validate_password_complexity, verify_password
 from app.services.audit_service import log_event
 from app.sessions import _sessions
-
-try:
-    from app.deps import get_authorization_header
-except ImportError:
-    def get_authorization_header(authorization: str | None = Header(default=None)) -> str | None:
-        return authorization
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

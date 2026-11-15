@@ -62,12 +62,67 @@ TLS alert code was returned.
 - These checks verify **local Uvicorn HTTPS**, not a deployed Nginx reverse proxy.
 - The Nginx configuration was inspected; it was not deployed or tested against
 a public endpoint or public-CA certificate.
-- Browser output-encoding verification remains pending because this repository
-  has no browser-rendered UI in the verified scope.
+- Browser output-encoding verification for the Customer UI is recorded in the
+  follow-up section below. The Admin audit-log UI is not part of this main-based
+  revision and remains covered separately by its unmerged PR.
+
+## Follow-up verification (2026-11-15)
+
+This follow-up was performed from a separate worktree based on `origin/main`
+at `4e046c635aece0000d924cf328ea05f144375988`, using a disposable SQLite
+database and loopback-only application ports. The live US-30 application,
+monitor and CSV were not used.
+
+### Browser output encoding
+
+Environment: Google Chrome 157.0.8103.51, Playwright via Node 22. The browser
+context used the `America/Los_Angeles` timezone. The exact command was:
+
+```bash
+NODE_PATH=/Users/vaby/.npm/_npx/e41f203b7505f1fb/node_modules \
+node tests/ui/us27_xss_check.js
+```
+
+Result:
+
+```text
+PASS: hostile account/transaction values rendered as literal text; no dialog or console error
+```
+
+The test mocked disposable API responses containing HTML tags, script-like
+text, an event-handler attribute, quotes and special characters. It verified
+that the Customer account and transaction UI displayed the values as text and
+created no HTML nodes, dialogs or browser console errors. This is genuine
+browser evidence, distinct from the source-level `test_ui_safety.py` scan and
+the API-level validation tests.
+
+The Admin audit-log UI is introduced by unmerged PR #77 and is not present on
+this main-based worktree. Therefore malicious audit-detail rendering in that
+UI is not claimed as evidence here; it must be verified with the Admin UI
+deliverable after that PR is merged or in its own isolated browser run.
+
+### Nginx runtime verification
+
+The exact availability checks were:
+
+```bash
+command -v nginx
+docker --version
+```
+
+Neither command found an executable in this environment. No Nginx process was
+started, no production port or certificate was touched, and no Nginx runtime
+result is claimed. The `deploy/nginx-https.conf` protocol allow-list and proxy
+headers remain source-level evidence only. The TLS 1.2/1.3 negotiation,
+TLS 1.0/1.1 refusal and endpoint results recorded above are historical local
+Uvicorn HTTPS evidence from 2026-11-14, not Nginx evidence.
 
 ### Regression checks
 
-- `pytest -v`: 160 passed, 1 warning.
+- `pytest -v`: 379 passed, 1 warning (2026-11-15 follow-up worktree).
+- `pytest tests/test_security_validation.py -v`: 6 passed, 1 warning.
+- `pytest tests/test_ui_safety.py -v`: 2 passed, 1 warning.
+- `pytest tests/test_ui_static.py -v`: 5 passed, 1 warning.
 - `python -m pip check`: No broken requirements found.
 - `python -m compileall -q app scripts`: passed.
 - `git diff --check`: passed.

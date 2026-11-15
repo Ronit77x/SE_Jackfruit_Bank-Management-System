@@ -21,4 +21,5 @@ def test_admin_ui_uses_existing_admin_apis_and_role_guard():
     assert 'name="user_id"' in (STATIC / "admin.html").read_text(encoding="utf-8")
     assert '"/admin/reports/daily?date="' in source
     assert "bms.patch" in source
+    assert 'form.elements.namedItem("action").value' in source
     assert "bms.money" in source

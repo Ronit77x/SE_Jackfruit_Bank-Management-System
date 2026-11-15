@@ -36,7 +36,8 @@
     bms.hide(tellerMessage);
     var form = event.currentTarget;
     try {
-      var user = await bms.patch("/admin/users/" + encodeURIComponent(form.userId.value.trim()), { action: form.action.value });
+      var action = form.elements.namedItem("action").value;
+      var user = await bms.patch("/admin/users/" + encodeURIComponent(form.userId.value.trim()), { action: action });
       bms.show(tellerMessage, "Teller " + user.id + " is now " + user.status + ".", true);
     } catch (error) { showError(tellerMessage, error); }
   });

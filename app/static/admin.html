@@ -47,17 +47,18 @@
           <input id="audit-action" name="action" maxlength="60">
         </div>
         <div>
-          <label for="audit-from">From date</label>
+          <label for="audit-from">From date (IST)</label>
           <input id="audit-from" name="from" type="date">
         </div>
         <div>
-          <label for="audit-to">To date</label>
+          <label for="audit-to">To date (IST)</label>
           <input id="audit-to" name="to" type="date">
         </div>
         <div><button type="submit">Load audit log</button></div>
       </form>
+      <p class="muted">Audit timestamps and date filters use India Standard Time (IST, UTC+05:30).</p>
       <div id="audit-message" class="message" role="alert" aria-live="polite"></div>
-      <div class="table-wrap"><table id="audit-table"><caption class="visually-hidden">Audit log entries</caption><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Outcome</th><th>Details</th></tr></thead><tbody></tbody></table></div>
+      <div class="table-wrap"><table id="audit-table"><caption class="visually-hidden">Audit log entries</caption><thead><tr><th>Time (IST)</th><th>User</th><th>Action</th><th>Outcome</th><th>Details</th></tr></thead><tbody></tbody></table></div>
     </section>
 
     <section class="card">

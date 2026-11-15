@@ -12,6 +12,23 @@
 
   function showError(node, error) { bms.show(node, error.message || "Request failed.", false); }
   function addCell(row, value, className) { row.appendChild(bms.el("td", value, className)); }
+  function formatAuditTimestamp(value) {
+    if (typeof value !== "string" || !value.trim()) { return "Invalid timestamp"; }
+    var source = value.trim();
+    // SQLite may return the backend's UTC datetime without an offset. Make that
+    // contract explicit before asking the browser to parse it.
+    if (!/(?:Z|[+-]\\d{2}:?\\d{2})$/.test(source)) { source += "Z"; }
+    var timestamp = new Date(source);
+    if (Number.isNaN(timestamp.getTime())) { return "Invalid timestamp"; }
+    var parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hour12: false
+    }).formatToParts(timestamp).reduce(function (result, part) {
+      result[part.type] = part.value; return result;
+    }, {});
+    return parts.year + "-" + parts.month + "-" + parts.day + " " + parts.hour + ":" + parts.minute + " IST";
+  }
   function queryFromForm(form) {
     var params = new URLSearchParams();
     Array.prototype.forEach.call(form.elements, function (field) {
@@ -50,7 +67,7 @@
       var entries = await bms.get("/admin/audit-logs?" + queryFromForm(event.currentTarget).toString());
       entries.forEach(function (entry) {
         var row = bms.el("tr");
-        addCell(row, new Date(entry.timestamp).toLocaleString());
+        addCell(row, formatAuditTimestamp(entry.timestamp));
         addCell(row, entry.user_id === null ? "System" : entry.user_id);
         addCell(row, entry.action);
         addCell(row, entry.outcome);

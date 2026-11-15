@@ -96,10 +96,33 @@ created no HTML nodes, dialogs or browser console errors. This is genuine
 browser evidence, distinct from the source-level `test_ui_safety.py` scan and
 the API-level validation tests.
 
-The Admin audit-log UI is introduced by unmerged PR #77 and is not present on
-this main-based worktree. Therefore malicious audit-detail rendering in that
-UI is not claimed as evidence here; it must be verified with the Admin UI
-deliverable after that PR is merged or in its own isolated browser run.
+The Admin audit-log UI is now present on this updated main-based worktree. Its
+browser evidence is recorded in the Admin subsection below.
+
+### Admin audit-log browser output encoding
+
+Environment: Google Chrome 157.0.8103.51, Playwright via Node 22, with an
+`America/Los_Angeles` browser context. The Admin UI ran on a separate
+loopback-only port and disposable database. The exact command was:
+
+```bash
+NODE_PATH=/Users/vaby/.npm/_npx/e41f203b7505f1fb/node_modules \
+node tests/ui/us27_admin_audit_xss_check.js
+```
+
+Result:
+
+```text
+PASS: hostile audit action/details rendered literally; normal row rendered; no injected elements, dialogs or console errors
+```
+
+The mocked audit response included an `<img>` with an `onerror` handler,
+`<script>` markup, SVG event-handler markup, quotes, ampersands and special
+characters in the action and details fields. The values appeared literally,
+normal audit content rendered, and no `img`, `script` or `svg` elements,
+dialogs or console errors were observed. This is separate genuine browser
+evidence from the Customer UI browser check above, source-level UI safety
+scans and API validation tests.
 
 ### Nginx runtime verification
 
@@ -119,10 +142,11 @@ Uvicorn HTTPS evidence from 2026-11-14, not Nginx evidence.
 
 ### Regression checks
 
-- `pytest -v`: 379 passed, 1 warning (2026-11-15 follow-up worktree).
+- `pytest -v`: 381 passed, 1 warning (2026-11-15 follow-up worktree).
 - `pytest tests/test_security_validation.py -v`: 6 passed, 1 warning.
 - `pytest tests/test_ui_safety.py -v`: 2 passed, 1 warning.
 - `pytest tests/test_ui_static.py -v`: 5 passed, 1 warning.
+- `pytest tests/test_admin_ui.py -v`: 2 passed, 1 warning.
 - `python -m pip check`: No broken requirements found.
 - `python -m compileall -q app scripts`: passed.
 - `git diff --check`: passed.

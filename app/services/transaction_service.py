@@ -3,10 +3,12 @@
 Owner: Member 3 (Ronit). Every function changes balances and writes its transaction rows in ONE
 database transaction: it either commits completely or rolls back completely.
 """
+import csv
 import functools
+import io
 import threading
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -14,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from app import constants as c
 from app.errors import AppError
-from app.models import Account, AuditLog, Transaction
+from app.models import Account, AuditLog, Notification, Transaction
 from app.services.audit_service import log_event
 
 
@@ -90,6 +92,143 @@ def _record(db: Session, account: Account, txn_type: str, amount: Decimal, refer
     return txn
 
 
+# ---------------------------------------------------------------------------------------------------------------
+# Notifications (BMS-F-033): a simulated e-mail/SMS record for every debit and every credit.
+# ---------------------------------------------------------------------------------------------------------------
+_CREDIT_TYPES = (c.TXN_DEPOSIT, c.TXN_OPENING_DEPOSIT, c.TXN_TRANSFER_IN)
+_NOTIFICATION_LABELS = {
+    c.TXN_DEPOSIT: "Deposit",
+    c.TXN_OPENING_DEPOSIT: "Opening deposit",
+    c.TXN_WITHDRAWAL: "Withdrawal",
+    c.TXN_TRANSFER_OUT: "Transfer sent",
+    c.TXN_TRANSFER_IN: "Transfer received",
+}
+
+
+def _rupees(value) -> str:
+    return f"Rs {Decimal(value):,.2f}"
+
+
+def add_transaction_notification(db: Session, account: Account, txn_type: str, amount: Decimal) -> Notification:
+    """Adds the notification record to the CURRENT database transaction (no commit).
+
+    Call it after the balance of `account` has been changed, so the message shows the new balance. Because it is
+    committed together with the money movement, a notification exists exactly when the movement happened.
+    Also used for the opening deposit of a new account. Only the masked account number is written (BMS-SR-007).
+    """
+    direction = "to" if txn_type in _CREDIT_TYPES else "from"
+    message = (
+        f"{_NOTIFICATION_LABELS[txn_type]} of {_rupees(amount)} {direction} account "
+        f"{mask_account_number(account.account_number)}. New balance: {_rupees(account.balance)}."
+    )
+    notification = Notification(customer_id=account.customer_id, message=message, status=c.NOTIFICATION_LOGGED)
+    db.add(notification)
+    return notification
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Transaction history (BMS-F-023) and statement (BMS-F-024). All dates are India Standard Time days.
+# ---------------------------------------------------------------------------------------------------------------
+MINI_STATEMENT_SIZE = 10
+DEFAULT_PAGE_SIZE = 100
+MAX_PAGE_SIZE = 1000  # largest page the history endpoint returns; the statement download has NO limit
+
+
+def bank_day_start_utc(day: date) -> datetime:
+    """Midnight at the start of `day` in India, in UTC (the timezone the database stores)."""
+    return datetime.combine(day, time.min, tzinfo=BANK_TIMEZONE).astimezone(timezone.utc)
+
+
+def to_bank_time(moment: datetime) -> datetime:
+    if moment.tzinfo is None:  # SQLite returns naive values that are UTC
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment.astimezone(BANK_TIMEZONE)
+
+
+def list_history(
+    db: Session,
+    account_number: str,
+    owner_customer_id: int | None,
+    enforce_owner: bool,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    newest_first: bool = True,
+    limit: int | None = None,
+    offset: int = 0,
+):
+    """Returns (account, transactions, is_mini_statement, total).
+
+    Without dates: the latest 10 transactions (the mini-statement); `total` is the number of all transactions.
+    With dates: the transactions from the start of `date_from` to the end of `date_to` (both included, India time);
+    `total` is how many there are in that range. `limit`/`offset` select a page of them; `limit=None` returns ALL of
+    them, which the statement download uses so that its totals always cover the complete period.
+    A Customer may only read their own accounts (403), an unknown account is 404, a bad range is 400.
+    """
+    account = _get_account(db, account_number)
+    if enforce_owner and account.customer_id != owner_customer_id:
+        raise AppError(403, "FORBIDDEN", "You can only view your own accounts.")
+    if (date_from is None) != (date_to is None):
+        raise AppError(400, "INVALID_RANGE", "Give both a from date and a to date, or neither.")
+    if date_from and date_to and date_from > date_to:
+        raise AppError(400, "INVALID_RANGE", "The from date must not be after the to date.")
+
+    conditions = [Transaction.account_id == account.id]
+    mini = date_from is None
+    if not mini:
+        conditions += [
+            Transaction.created_at >= bank_day_start_utc(date_from),
+            Transaction.created_at < bank_day_start_utc(date_to) + timedelta(days=1),
+        ]
+    total = db.scalar(select(func.count()).select_from(Transaction).where(*conditions))
+
+    ordering = (Transaction.created_at.desc(), Transaction.id.desc()) if newest_first else (
+        Transaction.created_at.asc(), Transaction.id.asc()
+    )
+    query = select(Transaction).where(*conditions).order_by(*ordering)
+    if mini:
+        query = query.limit(MINI_STATEMENT_SIZE)
+    elif limit is not None:
+        query = query.limit(limit).offset(offset)
+    return account, list(db.scalars(query)), mini, total
+
+
+def _csv_safe(text: str) -> str:
+    """Stops spreadsheet programs from running a cell that starts with = + - or @ as a formula."""
+    return "'" + text if text[:1] in ("=", "+", "-", "@", "\t", "\r") else text
+
+
+def build_statement_csv(account: Account, rows: list[Transaction], date_from: date, date_to: date):
+    """Returns (csv_text, total_credits, total_debits). `rows` are written oldest first."""
+    out = io.StringIO()
+    writer = csv.writer(out, lineterminator="\r\n")
+    writer.writerow(["Bank Management System - Account statement"])
+    writer.writerow(["Account", mask_account_number(account.account_number)])
+    writer.writerow(["Period (India Standard Time)", f"{date_from.isoformat()} to {date_to.isoformat()}"])
+    writer.writerow([])
+    writer.writerow(["Date and time", "Type", "Credit (Rs)", "Debit (Rs)", "Balance after (Rs)", "Receipt or reference"])
+    credits = Decimal("0")
+    debits = Decimal("0")
+    for row in rows:
+        is_credit = row.type in _CREDIT_TYPES
+        credits += row.amount if is_credit else Decimal("0")
+        debits += Decimal("0") if is_credit else row.amount
+        writer.writerow(
+            [
+                to_bank_time(row.created_at).strftime("%Y-%m-%d %H:%M:%S"),
+                _csv_safe(row.type),
+                f"{row.amount:.2f}" if is_credit else "",
+                "" if is_credit else f"{row.amount:.2f}",
+                f"{row.balance_after:.2f}",
+                _csv_safe(row.receipt_no or row.reference or ""),
+            ]
+        )
+    writer.writerow([])
+    writer.writerow(["Number of transactions", len(rows)])
+    writer.writerow(["Total credits (Rs)", f"{credits:.2f}"])
+    writer.writerow(["Total debits (Rs)", f"{debits:.2f}"])
+    return out.getvalue(), credits, debits
+
+
 @_serialized
 def deposit(db: Session, account_number: str, amount: Decimal, user_id: int | None) -> Transaction:
     """BMS-F-020: amount > 0 and <= DEPOSIT_LIMIT, account must be Active."""
@@ -102,6 +241,7 @@ def deposit(db: Session, account_number: str, amount: Decimal, user_id: int | No
         _require_active(account)
         account.balance = account.balance + amount
         txn = _record(db, account, c.TXN_DEPOSIT, amount, receipt=_new_receipt())
+        add_transaction_notification(db, account, c.TXN_DEPOSIT, amount)
         _audit(db, user_id, "DEPOSIT", "SUCCESS", f"{mask_account_number(account_number)} amount {amount}")
         db.commit()
     except AppError as exc:
@@ -158,6 +298,7 @@ def withdraw(db: Session, account_number: str, amount: Decimal, user_id: int | N
             )
         account.balance = account.balance - amount
         txn = _record(db, account, c.TXN_WITHDRAWAL, amount, receipt=_new_receipt())
+        add_transaction_notification(db, account, c.TXN_WITHDRAWAL, amount)
         _audit(db, user_id, "WITHDRAWAL", "SUCCESS", f"{mask_account_number(account_number)} amount {amount}")
         db.commit()
     except AppError as exc:
@@ -214,8 +355,10 @@ def transfer(
         reference = "TRF-" + uuid.uuid4().hex[:12].upper()
         source.balance = source.balance - amount
         debit = _record(db, source, c.TXN_TRANSFER_OUT, amount, reference=reference)
+        add_transaction_notification(db, source, c.TXN_TRANSFER_OUT, amount)
         _credit(destination, amount)
         _record(db, destination, c.TXN_TRANSFER_IN, amount, reference=reference)
+        add_transaction_notification(db, destination, c.TXN_TRANSFER_IN, amount)
         _audit(
             db,
             user_id,

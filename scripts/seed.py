@@ -5,6 +5,8 @@ Run from the repository root:   python -m scripts.seed
 Creates 5 customers (2 accounts each = 10 accounts), 3 tellers and 1 admin.
 Demo password for EVERY seeded user: Passw0rd!   (demo data only, never use it for anything real)
 Customer usernames are the customer IDs (1..5); tellers are teller1..teller3; admin is admin1.
+Set BMS_DATA_KEY first and keep that same key for later runs.
+Legacy plaintext demo IDs are upgraded in place; unrelated plaintext records are not migrated.
 Running it twice does not create duplicates, and running it again after an interrupted run completes the missing data.
 """
 from datetime import date
@@ -17,7 +19,7 @@ from app import crud
 from app.constants import ACCOUNT_CURRENT, ACCOUNT_SAVINGS, ROLE_ADMIN, ROLE_CUSTOMER, ROLE_TELLER
 from app.database import Base, SessionLocal, engine
 from app.models import Customer
-from app.security import hash_password
+from app.security import decrypt_value, encrypt_value, hash_password
 
 DEMO_PASSWORD = "Passw0rd!"
 
@@ -35,8 +37,32 @@ def _ensure_user(db: Session, username: str, role: str, password_hash: str, cust
         crud.create_user(db, username, password_hash, role, customer_id=customer_id)
 
 
+def _existing_demo_customers(db: Session) -> dict[str, Customer]:
+    """Identify demo rows before writing; never replace unreadable ciphertext."""
+    encrypt_value("")  # validate the key before creating even staff users
+    expected = {f"ID-DEMO-{index:04d}" for index in range(1, len(CUSTOMERS) + 1)}
+    found = {}
+    for customer in db.scalars(select(Customer)):
+        stored = customer.id_proof_number
+        if stored in expected:
+            proof = stored  # legacy demo data; migrated in place below
+        else:
+            try:
+                proof = decrypt_value(stored)
+            except ValueError as exc:
+                if stored.startswith("gAAAA"):
+                    raise RuntimeError("Existing encrypted ID proof cannot be read; check BMS_DATA_KEY.") from exc
+                continue  # unrelated plaintext data is not a demo migration target
+        if proof in expected:
+            if proof in found:
+                raise RuntimeError("Duplicate demo identities found; review the database before seeding.")
+            found[proof] = customer
+    return found
+
+
 def seed(db: Session) -> None:
     """Creates whatever is missing. Safe to run again, also after an earlier run stopped halfway."""
+    existing_customers = _existing_demo_customers(db)
     password_hash = hash_password(DEMO_PASSWORD)
     _ensure_user(db, "admin1", ROLE_ADMIN, password_hash)
     for i in range(1, 4):
@@ -44,7 +70,7 @@ def seed(db: Session) -> None:
 
     for index, (name, dob, address, phone, email) in enumerate(CUSTOMERS, start=1):
         id_proof = f"ID-DEMO-{index:04d}"
-        customer = db.scalar(select(Customer).where(Customer.id_proof_number == id_proof))
+        customer = existing_customers.get(id_proof)
         if customer is None:
             customer = crud.create_customer(
                 db,
@@ -53,8 +79,12 @@ def seed(db: Session) -> None:
                 address=address,
                 phone=phone,
                 email=email,
-                id_proof_number=id_proof,
+                id_proof_number=encrypt_value(id_proof),
             )
+        elif customer.id_proof_number == id_proof:
+            # Preserve IDs, accounts, balances and logins while upgrading legacy demo data.
+            customer.id_proof_number = encrypt_value(id_proof)
+            db.commit()
         _ensure_user(db, str(customer.id), ROLE_CUSTOMER, password_hash, customer_id=customer.id)
 
         existing_types = {account.type for account in customer.accounts}

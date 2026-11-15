@@ -63,6 +63,9 @@ availability, HTTP status distribution, response-time statistics, slow checks,
 malformed rows, irregular/missing intervals and observation coverage. It does
 not silently discard failed checks and applies no maintenance exclusion; the
 report states that maintenance exclusion is unverified.
+Response-time values must be finite and non-negative. Invalid timing values
+are counted separately and excluded from response-time statistics, while their
+valid timestamp/status observations remain in availability totals.
 
 Example for the complete November 2026 IST calendar month (run after the month
 has ended):

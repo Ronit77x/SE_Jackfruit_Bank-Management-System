@@ -31,8 +31,19 @@ def _parse_timestamp(value: str) -> datetime:
     return parsed.astimezone(UTC)
 
 
+def _validate_interval(interval_seconds: float) -> float:
+    try:
+        value = float(interval_seconds)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("interval_seconds must be a finite number greater than zero") from exc
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError("interval_seconds must be a finite number greater than zero")
+    return value
+
+
 def analyze(path: Path, start_date: date, end_date: date, interval_seconds: float = 30.0) -> dict[str, object]:
     """Analyze rows without modifying *path*; end_date is exclusive in IST."""
+    interval_seconds = _validate_interval(interval_seconds)
     period_start, period_end = _period(start_date, end_date)
     rows_read = 0
     malformed_rows = 0
@@ -63,11 +74,15 @@ def analyze(path: Path, start_date: date, end_date: date, interval_seconds: floa
     availability = (successes / total * 100) if total else None
     http_statuses = Counter(row.get("http_status") or "<none>" for _, row in observations)
     response_times = []
+    invalid_response_times = 0
     for _, row in observations:
         try:
-            response_times.append(float(row["response_time_ms"]))
+            response_time = float(row["response_time_ms"])
+            if not math.isfinite(response_time) or response_time < 0:
+                raise ValueError
+            response_times.append(response_time)
         except (TypeError, ValueError):
-            malformed_rows += 1
+            invalid_response_times += 1
     intervals = [
         (current - previous).total_seconds()
         for (previous, _), (current, _) in zip(observations, observations[1:])
@@ -100,6 +115,7 @@ def analyze(path: Path, start_date: date, end_date: date, interval_seconds: floa
             "at_least_1000ms": sum(value >= 1000 for value in response_times),
         },
         "malformed_rows": malformed_rows,
+        "invalid_response_time_observations": invalid_response_times,
         "outside_requested_period": outside_period,
         "coverage": {
             "first_observation_utc": observations[0][0].isoformat() if observations else None,
@@ -122,7 +138,11 @@ def main() -> None:
     parser.add_argument("--end-date", type=date.fromisoformat, required=True, help="IST date, exclusive")
     parser.add_argument("--interval-seconds", type=float, default=30.0)
     args = parser.parse_args()
-    print(json.dumps(analyze(args.input, args.start_date, args.end_date, args.interval_seconds), indent=2, sort_keys=True))
+    try:
+        result = analyze(args.input, args.start_date, args.end_date, args.interval_seconds)
+    except ValueError as exc:
+        parser.error(str(exc))
+    print(json.dumps(result, indent=2, sort_keys=True, allow_nan=False))
 
 
 if __name__ == "__main__":

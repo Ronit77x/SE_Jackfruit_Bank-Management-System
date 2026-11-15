@@ -63,8 +63,9 @@ TLS alert code was returned.
 - The Nginx configuration was inspected; it was not deployed or tested against
 a public endpoint or public-CA certificate.
 - Browser output-encoding verification for the Customer UI is recorded in the
-  follow-up section below. The Admin audit-log UI is not part of this main-based
-  revision and remains covered separately by its unmerged PR.
+  follow-up section below. The Admin audit-log UI was merged into main through
+  PR #77. Its browser output-encoding and XSS verification is documented in the
+  Admin audit-log browser verification section below.
 
 ## Follow-up verification (2026-11-15)
 

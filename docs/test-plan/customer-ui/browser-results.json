@@ -1,0 +1,22 @@
+{
+  "browser": "157.0.4341.46",
+  "checks": [
+    "real login reaches customer entry, masked accounts and exact money",
+    "all pages navigable with complete totals and boundary buttons",
+    "CSV download contains all 61 records rather than the visible page",
+    "invalid date order prevented before any request",
+    "360px viewport contains page and scrollable table",
+    "account selection resets pagination; frozen account empty state works",
+    "failed download surfaces audit error and never saves a file",
+    "late response from a previous account cannot overwrite the new account",
+    "server text remains inert and a failed refresh clears stale rows",
+    "401 clears shared session and returns to login",
+    "customer with no accounts sees a useful empty state"
+  ],
+  "mobile": {
+    "viewport": 360,
+    "client": 360,
+    "scroll": 360,
+    "table": 335
+  }
+}

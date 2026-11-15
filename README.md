@@ -54,3 +54,7 @@ tests/          Automated tests
 - Every change goes through a pull request with at least one review by a teammate.
 - Merge pull requests with **"Create a merge commit"** so every member's individual commits are preserved.
 - Backlog items are GitHub Issues titled `[US-xx] …`, assigned to their owner, tracked in the GitHub Project.
+
+## Sprint demos
+
+- [Sprint 1 demo video](docs/demo/sprint1-demo.mp4) (47 seconds, silent): deposit, withdrawal, minimum-balance rejection, transfer, Teller creation, and the passing pytest summary.

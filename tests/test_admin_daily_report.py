@@ -1,12 +1,15 @@
 from datetime import datetime, timezone
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 import pytest
+from cryptography.fernet import Fernet
 
 from app import crud
 from app.constants import ACCOUNT_SAVINGS, TXN_DEPOSIT, TXN_OPENING_DEPOSIT, TXN_TRANSFER_IN, TXN_TRANSFER_OUT, TXN_WITHDRAWAL
 from app.models import Transaction
 from tests.auth_helpers import act_as
+from tests.test_accounts import new_customer_payload
 
 
 def add_account(db, number):
@@ -61,6 +64,48 @@ def test_admin_report_aggregates_bank_wide_activity_and_transfer_once(client, db
     assert body["withdrawals"]["count"] == 1
     assert Decimal(str(body["withdrawals"]["total_amount"])) == Decimal("20.25")
     assert body["transfers"] == {"count": 1, "total_amount": "50.00"}
+
+
+def test_report_aggregates_large_ledger_totals_with_decimal_exactly(client, db):
+    account = add_account(db, "1000000005")
+    amount = Decimal("999999999999.99")
+    expected_deposits = sum((amount for _ in range(101)), Decimal("0.00"))
+    day = datetime(2026, 3, 9, 18, 30, tzinfo=timezone.utc)
+    for _ in range(101):
+        add_txn(db, account.id, TXN_DEPOSIT, amount, day)
+    add_txn(db, account.id, TXN_WITHDRAWAL, Decimal("1.23"), day)
+    add_txn(db, account.id, TXN_TRANSFER_OUT, Decimal("2.34"), day, "TRF-LARGE")
+    add_txn(db, account.id, TXN_TRANSFER_IN, Decimal("2.34"), day, "TRF-LARGE")
+    act_as("Admin")
+
+    response = report(client)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert Decimal(body["deposits"]["total_amount"]) == expected_deposits
+    assert body["deposits"]["count"] == 101
+    assert body["withdrawals"] == {"count": 1, "total_amount": "1.23"}
+    assert body["transfers"] == {"count": 1, "total_amount": "2.34"}
+
+
+def test_account_opening_flow_reports_opening_deposit_exactly_once(client, db, monkeypatch):
+    monkeypatch.setenv("BMS_DATA_KEY", Fernet.generate_key().decode())
+    act_as("Teller", user_id=7)
+    response = client.post("/accounts", json=new_customer_payload())
+
+    assert response.status_code == 201
+    account_id = response.json()["account_id"]
+    transaction = db.query(Transaction).filter_by(account_id=account_id, type=TXN_OPENING_DEPOSIT).one()
+    report_date = transaction.created_at.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("Asia/Kolkata")).date()
+
+    act_as("Admin", user_id=8)
+    report_response = client.get("/admin/reports/daily", params={"date": report_date.isoformat()})
+
+    assert report_response.status_code == 200
+    body = report_response.json()
+    assert body["deposits"]["count"] == 1
+    assert body["deposits"]["total_amount"] == "1000.00"
+    assert body["deposits"]["opening_deposits"] == {"count": 1, "total_amount": "1000.00"}
 
 
 def test_opening_deposits_are_transparent_deposit_subcategory(client, db):

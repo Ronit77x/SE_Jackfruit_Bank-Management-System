@@ -11,7 +11,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import case, func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -95,26 +95,41 @@ def daily_transaction_report(
     transfer's matching TransferIn row is not double-counted.
     """
     report_date, start_utc, end_utc = _report_day_bounds(date)
-    amount_sum = lambda condition: func.coalesce(func.sum(case((condition, Transaction.amount), else_=0)), 0)
-    count_rows = lambda condition: func.coalesce(func.sum(case((condition, 1), else_=0)), 0)
-    aggregates = db.execute(
-        select(
-            count_rows(Transaction.type.in_((TXN_DEPOSIT, TXN_OPENING_DEPOSIT))).label("deposit_count"),
-            amount_sum(Transaction.type.in_((TXN_DEPOSIT, TXN_OPENING_DEPOSIT))).label("deposit_total"),
-            count_rows(Transaction.type == TXN_OPENING_DEPOSIT).label("opening_count"),
-            amount_sum(Transaction.type == TXN_OPENING_DEPOSIT).label("opening_total"),
-            count_rows(Transaction.type == TXN_WITHDRAWAL).label("withdrawal_count"),
-            amount_sum(Transaction.type == TXN_WITHDRAWAL).label("withdrawal_total"),
-            count_rows(Transaction.type == TXN_TRANSFER_OUT).label("transfer_count"),
-            amount_sum(Transaction.type == TXN_TRANSFER_OUT).label("transfer_total"),
-        ).where(Transaction.created_at >= start_utc, Transaction.created_at < end_utc)
-    ).one()
+    # SQLite can evaluate SUM over NUMERIC values through binary floating point,
+    # which loses cents for sufficiently large ledgers. Fetch the already
+    # cent-quantized individual values and add them as Decimal instances.
+    transactions = db.scalars(
+        select(Transaction).where(Transaction.created_at >= start_utc, Transaction.created_at < end_utc)
+    )
+    deposit_count = 0
+    deposit_total = Decimal("0.00")
+    opening_count = 0
+    opening_total = Decimal("0.00")
+    withdrawal_count = 0
+    withdrawal_total = Decimal("0.00")
+    transfer_count = 0
+    transfer_total = Decimal("0.00")
 
-    def money(value) -> Decimal:
-        return Decimal(str(value or 0)).quantize(Decimal("0.01"))
+    for transaction in transactions:
+        amount = Decimal(transaction.amount).quantize(Decimal("0.01"))
+        if transaction.type in (TXN_DEPOSIT, TXN_OPENING_DEPOSIT):
+            deposit_count += 1
+            deposit_total += amount
+        if transaction.type == TXN_OPENING_DEPOSIT:
+            opening_count += 1
+            opening_total += amount
+        elif transaction.type == TXN_WITHDRAWAL:
+            withdrawal_count += 1
+            withdrawal_total += amount
+        elif transaction.type == TXN_TRANSFER_OUT:
+            transfer_count += 1
+            transfer_total += amount
 
-    def summary(count, total) -> TransactionSummary:
-        return TransactionSummary(count=int(count or 0), total_amount=money(total))
+    def money(value: Decimal) -> Decimal:
+        return value.quantize(Decimal("0.01"))
+
+    def summary(count: int, total: Decimal) -> TransactionSummary:
+        return TransactionSummary(count=count, total_amount=money(total))
 
     # BMS-SR-006: report generation is an administrative action; details contain
     # only the selected date and no customer, account or financial information.
@@ -124,12 +139,12 @@ def daily_transaction_report(
         timezone=BANK_TIMEZONE_NAME,
         generated_at=datetime.now(timezone.utc),
         deposits=DepositSummary(
-            count=int(aggregates.deposit_count or 0),
-            total_amount=money(aggregates.deposit_total),
-            opening_deposits=summary(aggregates.opening_count, aggregates.opening_total),
+            count=deposit_count,
+            total_amount=money(deposit_total),
+            opening_deposits=summary(opening_count, opening_total),
         ),
-        withdrawals=summary(aggregates.withdrawal_count, aggregates.withdrawal_total),
-        transfers=summary(aggregates.transfer_count, aggregates.transfer_total),
+        withdrawals=summary(withdrawal_count, withdrawal_total),
+        transfers=summary(transfer_count, transfer_total),
     )
 
 

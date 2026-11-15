@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bank Management System - Administration</title>
+  <link rel="stylesheet" href="/ui/css/style.css">
+</head>
+<body>
+  <header id="site-header" class="site"></header>
+  <main>
+    <section class="card">
+      <h2>Teller management</h2>
+      <div class="row two">
+        <form id="create-teller-form" autocomplete="off">
+          <h3>Create Teller</h3>
+          <label for="teller-username">Username</label>
+          <input id="teller-username" name="username" maxlength="60" required>
+          <label for="teller-password">Temporary password</label>
+          <input id="teller-password" name="password" type="password" minlength="8" maxlength="128" required>
+          <button type="submit">Create Teller</button>
+        </form>
+        <form id="teller-action-form" autocomplete="off">
+          <h3>Update Teller</h3>
+          <label for="teller-id">Teller user ID</label>
+          <input id="teller-id" name="userId" inputmode="numeric" pattern="[0-9]+" required>
+          <label for="teller-action">Action</label>
+          <select id="teller-action" name="action">
+            <option value="deactivate">Deactivate</option>
+            <option value="unlock">Unlock</option>
+          </select>
+          <button type="submit" class="secondary">Apply action</button>
+        </form>
+      </div>
+      <div id="teller-message" class="message" role="alert" aria-live="polite"></div>
+    </section>
+
+    <section class="card">
+      <h2>Audit log</h2>
+      <form id="audit-form" class="row two" autocomplete="off">
+        <div>
+          <label for="audit-user">User ID</label>
+          <input id="audit-user" name="user_id" inputmode="numeric" pattern="[0-9]*">
+        </div>
+        <div>
+          <label for="audit-action">Action</label>
+          <input id="audit-action" name="action" maxlength="60">
+        </div>
+        <div>
+          <label for="audit-from">From date (IST)</label>
+          <input id="audit-from" name="from" type="date">
+        </div>
+        <div>
+          <label for="audit-to">To date (IST)</label>
+          <input id="audit-to" name="to" type="date">
+        </div>
+        <div><button type="submit">Load audit log</button></div>
+      </form>
+      <p class="muted">Audit timestamps and date filters use India Standard Time (IST, UTC+05:30).</p>
+      <div id="audit-message" class="message" role="alert" aria-live="polite"></div>
+      <div class="table-wrap"><table id="audit-table"><caption class="visually-hidden">Audit log entries</caption><thead><tr><th>Time (IST)</th><th>User</th><th>Action</th><th>Outcome</th><th>Details</th></tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <section class="card">
+      <h2>Daily transaction report</h2>
+      <form id="report-form" class="field-row" autocomplete="off">
+        <label for="report-date">Bank date</label>
+        <input id="report-date" name="date" type="date" required>
+        <button type="submit">Generate report</button>
+      </form>
+      <div id="report-message" class="message" role="alert" aria-live="polite"></div>
+      <div id="report-results" class="report-grid" hidden></div>
+    </section>
+  </main>
+  <script src="/ui/js/api.js"></script>
+  <script src="/ui/js/admin.js"></script>
+</body>
+</html>

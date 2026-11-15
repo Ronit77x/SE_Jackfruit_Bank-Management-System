@@ -138,8 +138,8 @@ def test_mandatory_reset_banner_css_and_attributes(client):
 def test_navigation_destinations_for_all_roles(client):
     """Verify that Customer and Teller destinations exist and return 200 OK,
 
-    and verify that /ui/admin.html returns 404 while change-password.html keeps Admin
-    on the page with a working logout action rather than redirecting to /docs or /ui/admin.html.
+    and verify that /ui/admin.html is available while change-password.html keeps Admin
+    on the page with a working logout action rather than redirecting to /docs.
     """
     # Customer destination
     cust_resp = client.get("/ui/customer.html")
@@ -149,9 +149,12 @@ def test_navigation_destinations_for_all_roles(client):
     teller_resp = client.get("/ui/teller-cash.html")
     assert teller_resp.status_code == status.HTTP_200_OK
 
-    # Verify obsolete admin.html returns 404 (not invented or present)
-    obsolete_admin = client.get("/ui/admin.html")
-    assert obsolete_admin.status_code == status.HTTP_404_NOT_FOUND
+    # Verify the Admin destination is available and contains the Admin UI sections.
+    admin_resp = client.get("/ui/admin.html")
+    assert admin_resp.status_code == status.HTTP_200_OK
+    assert "Teller management" in admin_resp.text
+    assert "Audit log" in admin_resp.text
+    assert "Daily transaction report" in admin_resp.text
 
     # Verify change-password page contains the role-aware handling without Admin redirects
     html_resp = client.get("/ui/change-password.html")

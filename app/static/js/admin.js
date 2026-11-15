@@ -7,8 +7,10 @@
   var tellerMessage = document.getElementById("teller-message");
   var auditMessage = document.getElementById("audit-message");
   var reportMessage = document.getElementById("report-message");
+  var accountStatusMessage = document.getElementById("account-status-message");
   var auditBody = document.querySelector("#audit-table tbody");
   var reportResults = document.getElementById("report-results");
+  var accountStatusForm = document.getElementById("account-status-form");
 
   function showError(node, error) { bms.show(node, error.message || "Request failed.", false); }
   function addCell(row, value, className) { row.appendChild(bms.el("td", value, className)); }
@@ -57,6 +59,25 @@
       var user = await bms.patch("/admin/users/" + encodeURIComponent(form.userId.value.trim()), { action: action });
       bms.show(tellerMessage, "Teller " + user.id + " is now " + user.status + ".", true);
     } catch (error) { showError(tellerMessage, error); }
+  });
+
+  Array.prototype.forEach.call(accountStatusForm.querySelectorAll("button[data-status-action]"), function (button) {
+    button.addEventListener("click", function () { accountStatusForm.dataset.statusAction = button.dataset.statusAction; });
+  });
+  accountStatusForm.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    bms.hide(accountStatusMessage);
+    var action = accountStatusForm.dataset.statusAction || "";
+    if (action === "close" && !window.confirm("Close this account? This cannot be undone.")) { return; }
+    var buttons = accountStatusForm.querySelectorAll("button");
+    Array.prototype.forEach.call(buttons, function (button) { button.disabled = true; });
+    try {
+      var identifier = accountStatusForm.accountIdentifier.value.trim();
+      var account = await bms.patch("/accounts/" + encodeURIComponent(identifier) + "/status", { action: action });
+      bms.show(accountStatusMessage, "Account status changed to " + account.status + ".", true);
+      accountStatusForm.reset();
+    } catch (error) { showError(accountStatusMessage, error); }
+    finally { Array.prototype.forEach.call(buttons, function (button) { button.disabled = false; }); }
   });
 
   document.getElementById("audit-form").addEventListener("submit", async function (event) {

@@ -4,17 +4,23 @@ import secrets
 import threading
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.constants import MAX_FAILED_LOGINS, ROLE_ADMIN, USER_ACTIVE, USER_LOCKED
 from app.database import get_db
-from app.models import User
+from app.models import AuditLog, User
 from app.deps import get_current_user, require_roles
 from app.security import hash_password, validate_password_complexity, verify_password
 from app.services.audit_service import log_event
 from app.sessions import _sessions
+
+try:
+    from app.deps import get_authorization_header
+except ImportError:
+    def get_authorization_header(authorization: str | None = Header(default=None)) -> str | None:
+        return authorization
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -125,7 +131,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/logout")
-def logout(authorization: str | None = Header(default=None)):
+def logout(authorization: str | None = Depends(get_authorization_header)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=401,
@@ -178,7 +184,7 @@ def change_password(
     payload: ChangePasswordRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    authorization: str | None = Header(default=None),
+    authorization: str | None = Depends(get_authorization_header),
 ):
     current_token = authorization[7:].strip() if authorization and authorization.startswith("Bearer ") else None
 
@@ -193,7 +199,7 @@ def change_password(
         )
         raise HTTPException(status_code=400, detail="Incorrect current password")
 
-    # 2. Validate new password complexity
+    # 2. Validate new password complexity and length limit (<= 72 UTF-8 bytes)
     is_valid, error_msg = validate_password_complexity(payload.newPassword)
     if not is_valid:
         log_event(
@@ -205,26 +211,33 @@ def change_password(
         )
         raise HTTPException(status_code=400, detail=error_msg)
 
-    # 3. Hash new password and update user
+    # 3. Atomically update password, reset must_change_password, and record success audit
     current_user.password_hash = hash_password(payload.newPassword)
     current_user.must_change_password = False
-    db.commit()
 
-    # 4. Invalidate all OTHER sessions for this user, keeping current session valid
+    audit_entry = AuditLog(
+        user_id=current_user.id,
+        action="CHANGE_PASSWORD",
+        outcome="SUCCESS",
+        details="Password changed successfully",
+    )
+    db.add(audit_entry)
+
+    try:
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update password and record audit event",
+        ) from exc
+
+    # 4. Invalidate all OTHER sessions for this user ONLY after successful commit
     tokens_to_delete = [
         t for t, s in _sessions.items()
         if s.get("user_id") == current_user.id and t != current_token
     ]
     for t in tokens_to_delete:
         _sessions.pop(t, None)
-
-    # 5. Audit successful password change (never log plain passwords)
-    log_event(
-        db,
-        current_user.id,
-        "CHANGE_PASSWORD",
-        "SUCCESS",
-        "Password changed successfully",
-    )
 
     return {"message": "Password changed successfully"}

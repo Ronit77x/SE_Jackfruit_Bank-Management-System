@@ -180,6 +180,7 @@ def test_real_customer_login_returns_only_owned_masked_accounts(client, db):
     response = client.get("/accounts", headers=login(client, user))
     assert response.status_code == 200
     assert response.json()["accounts"] == [{
+        "account_id": own.id,
         "account_number": "******" + own.account_number[-4:],
         "account_type": own.type, "balance": str(own.balance), "status": own.status,
     }]

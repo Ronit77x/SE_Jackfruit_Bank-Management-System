@@ -17,7 +17,7 @@
     var source = value.trim();
     // SQLite may return the backend's UTC datetime without an offset. Make that
     // contract explicit before asking the browser to parse it.
-    if (!/(?:Z|[+-]\\d{2}:?\\d{2})$/.test(source)) { source += "Z"; }
+    if (!/(?:Z|[+-]\d{2}:?\d{2})$/.test(source)) { source += "Z"; }
     var timestamp = new Date(source);
     if (Number.isNaN(timestamp.getTime())) { return "Invalid timestamp"; }
     var parts = new Intl.DateTimeFormat("en-GB", {

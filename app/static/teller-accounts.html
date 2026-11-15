@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bank Management System - Accounts</title>
+  <link rel="stylesheet" href="/ui/css/style.css">
+  <link rel="stylesheet" href="/ui/css/teller-accounts.css">
+</head>
+<body>
+  <header id="site-header" class="site"></header>
+  <main>
+    <!-- Section 1: Customer and Account Search (US-13) -->
+    <section class="card" id="search-section" aria-labelledby="search-heading">
+      <h2 id="search-heading">Search customers and accounts</h2>
+      <p class="muted">Search by customer name, phone number, or 10-digit account number.</p>
+      <form id="search-form" autocomplete="off" novalidate>
+        <div class="field-row">
+          <input id="search-query" name="q" type="search" placeholder="Enter name, phone, or account number" aria-label="Search query">
+          <button type="submit" id="search-submit">Search</button>
+          <button type="button" id="search-clear" class="secondary">Clear</button>
+        </div>
+      </form>
+      <div id="search-message" class="message" role="alert"></div>
+      <p id="search-summary" role="status" aria-live="polite" class="muted"></p>
+      <div id="search-results-wrap" class="table-wrap" tabindex="0" role="region" aria-label="Search results table" hidden>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Customer ID</th>
+              <th scope="col">Customer name</th>
+              <th scope="col">Phone</th>
+              <th scope="col">Email</th>
+              <th scope="col">Account ID</th>
+              <th scope="col">Account number</th>
+              <th scope="col">Type</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="num">Balance (Rs)</th>
+            </tr>
+          </thead>
+          <tbody id="search-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 2: Open a Bank Account (US-08) -->
+    <section class="card" id="open-account-section" aria-labelledby="open-account-heading">
+      <h2 id="open-account-heading">Open a bank account</h2>
+      <p class="muted">Open a Savings or Current account for a new or existing customer.</p>
+
+      <div class="customer-mode-toggle" role="radiogroup" aria-label="Customer workflow">
+        <label class="radio-label">
+          <input type="radio" name="customerMode" id="mode-new" value="new" checked>
+          New customer
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="customerMode" id="mode-existing" value="existing">
+          Existing customer
+        </label>
+      </div>
+
+      <form id="open-account-form" autocomplete="off" novalidate>
+        <!-- Existing Customer Fieldset -->
+        <div id="existing-customer-fields" hidden>
+          <label for="existing-customer-id">Existing customer ID</label>
+          <input id="existing-customer-id" name="customerId" type="number" min="1" step="1" placeholder="e.g. 1">
+        </div>
+
+        <!-- New Customer Fieldset -->
+        <div id="new-customer-fields">
+          <div class="row two">
+            <div>
+              <label for="new-customer-name">Full name</label>
+              <input id="new-customer-name" name="name" maxlength="120" placeholder="e.g. Priya Sharma">
+            </div>
+            <div>
+              <label for="new-customer-dob">Date of birth</label>
+              <input id="new-customer-dob" name="dateOfBirth" type="date">
+            </div>
+          </div>
+
+          <label for="new-customer-address">Residential address</label>
+          <input id="new-customer-address" name="address" maxlength="255" placeholder="e.g. 123 MG Road, Bengaluru">
+
+          <div class="row two">
+            <div>
+              <label for="new-customer-phone">Phone number</label>
+              <input id="new-customer-phone" name="phone" type="tel" maxlength="20" placeholder="e.g. 9876543210">
+            </div>
+            <div>
+              <label for="new-customer-email">Email address</label>
+              <input id="new-customer-email" name="email" type="email" maxlength="120" placeholder="e.g. priya@example.com">
+            </div>
+          </div>
+
+          <label for="new-customer-idproof">ID proof number</label>
+          <input id="new-customer-idproof" name="idProofNumber" maxlength="255" placeholder="e.g. PAN / Aadhaar / Passport number">
+        </div>
+
+        <!-- Account Details (Shared) -->
+        <div class="row two">
+          <div>
+            <label for="open-account-type">Account type</label>
+            <select id="open-account-type" name="accountType" required>
+              <option value="Savings">Savings (Min: Rs 1,000)</option>
+              <option value="Current">Current (Min: Rs 5,000)</option>
+            </select>
+          </div>
+          <div>
+            <label for="open-deposit">Opening deposit (Rs)</label>
+            <input id="open-deposit" name="deposit" inputmode="decimal" pattern="[0-9]+(\.[0-9]{1,2})?" placeholder="Min: Rs 1,000 for Savings, Rs 5,000 for Current" required>
+          </div>
+        </div>
+
+        <button type="submit" id="open-account-submit">Open account</button>
+      </form>
+
+      <div id="open-account-message" class="message" role="alert"></div>
+
+      <!-- Account-Opening Success Card -->
+      <div id="open-account-success" class="card success-card" role="region" aria-label="Account opening details" hidden>
+        <h3>Account opened successfully</h3>
+        <dl class="details-list" id="open-account-details-list"></dl>
+
+        <div id="temp-password-box" class="temp-password-callout" hidden>
+          <strong>Temporary login password:</strong>
+          <span id="temp-password-value" class="temp-password-code"></span>
+          <p class="muted">Provide this temporary password to the customer. They must change it upon their first login.</p>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="open-account-dismiss" class="secondary">Dismiss and clear</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Update Customer Contact Details (US-10) -->
+    <section class="card" id="update-customer-section" aria-labelledby="update-customer-heading">
+      <h2 id="update-customer-heading">Update customer contact details</h2>
+      <p class="muted">Update phone, email, or address for an existing customer. At least one field is required.</p>
+      <form id="update-customer-form" autocomplete="off" novalidate>
+        <label for="update-customer-id">Customer ID</label>
+        <input id="update-customer-id" name="customerId" type="number" min="1" step="1" placeholder="e.g. 1" required>
+
+        <div class="row two">
+          <div>
+            <label for="update-phone">New phone number (optional)</label>
+            <input id="update-phone" name="phone" type="tel" maxlength="20" placeholder="10–15 digits, e.g. 9876543210">
+          </div>
+          <div>
+            <label for="update-email">New email address (optional)</label>
+            <input id="update-email" name="email" type="email" maxlength="120" placeholder="e.g. updated@example.com">
+          </div>
+        </div>
+
+        <label for="update-address">New address (optional)</label>
+        <input id="update-address" name="address" maxlength="255" placeholder="e.g. 456 Residency Road, Bengaluru">
+
+        <button type="submit" id="update-customer-submit">Update contact details</button>
+        <button type="button" id="update-customer-clear" class="secondary">Clear</button>
+      </form>
+
+      <div id="update-customer-message" class="message" role="alert"></div>
+
+      <!-- Customer Update Success Card -->
+      <div id="update-customer-success" class="card success-card" role="region" aria-label="Updated customer details" hidden>
+        <h3>Customer details updated</h3>
+        <dl class="details-list" id="update-customer-details-list"></dl>
+      </div>
+    </section>
+  </main>
+  <script src="/ui/js/api.js"></script>
+  <script src="/ui/js/teller-accounts.js"></script>
+</body>
+</html>

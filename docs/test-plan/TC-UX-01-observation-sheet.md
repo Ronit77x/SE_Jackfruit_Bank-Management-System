@@ -64,91 +64,91 @@ After each session:
 
 ### Participant 1 (P1) — NOT YET TESTED
 - **First-time-user confirmation:** `[ ] Yes / [ ] No`
-- **Actual trial date and time:** 
-- **Device and browser:** 
-- **Task start time:** 
-- **Task completion time:** 
-- **Elapsed time (seconds):** 
+- **Actual trial date and time:**
+- **Device and browser:**
+- **Task start time:**
+- **Task completion time:**
+- **Elapsed time (seconds):**
 - **Correct source account selected:** `[ ] Yes / [ ] No`
 - **Correct recipient account entered (1000000003):** `[ ] Yes / [ ] No`
 - **Correct amount entered (₹500):** `[ ] Yes / [ ] No`
 - **Transfer completed successfully:** `[ ] Yes / [ ] No`
-- **Assistance requested or received:** `[ ] None / [ ] Details:` 
+- **Assistance requested or received:** `[ ] None / [ ] Details:`
 - **Participant outcome:** `[ ] PASS / [ ] FAIL`
-- **Actual participant feedback:** 
-- **Observed usability problems:** 
+- **Actual participant feedback:**
+- **Observed usability problems:**
 
 ---
 
 ### Participant 2 (P2) — NOT YET TESTED
 - **First-time-user confirmation:** `[ ] Yes / [ ] No`
-- **Actual trial date and time:** 
-- **Device and browser:** 
-- **Task start time:** 
-- **Task completion time:** 
-- **Elapsed time (seconds):** 
+- **Actual trial date and time:**
+- **Device and browser:**
+- **Task start time:**
+- **Task completion time:**
+- **Elapsed time (seconds):**
 - **Correct source account selected:** `[ ] Yes / [ ] No`
 - **Correct recipient account entered (1000000003):** `[ ] Yes / [ ] No`
 - **Correct amount entered (₹500):** `[ ] Yes / [ ] No`
 - **Transfer completed successfully:** `[ ] Yes / [ ] No`
-- **Assistance requested or received:** `[ ] None / [ ] Details:` 
+- **Assistance requested or received:** `[ ] None / [ ] Details:`
 - **Participant outcome:** `[ ] PASS / [ ] FAIL`
-- **Actual participant feedback:** 
-- **Observed usability problems:** 
+- **Actual participant feedback:**
+- **Observed usability problems:**
 
 ---
 
 ### Participant 3 (P3) — NOT YET TESTED
 - **First-time-user confirmation:** `[ ] Yes / [ ] No`
-- **Actual trial date and time:** 
-- **Device and browser:** 
-- **Task start time:** 
-- **Task completion time:** 
-- **Elapsed time (seconds):** 
+- **Actual trial date and time:**
+- **Device and browser:**
+- **Task start time:**
+- **Task completion time:**
+- **Elapsed time (seconds):**
 - **Correct source account selected:** `[ ] Yes / [ ] No`
 - **Correct recipient account entered (1000000003):** `[ ] Yes / [ ] No`
 - **Correct amount entered (₹500):** `[ ] Yes / [ ] No`
 - **Transfer completed successfully:** `[ ] Yes / [ ] No`
-- **Assistance requested or received:** `[ ] None / [ ] Details:` 
+- **Assistance requested or received:** `[ ] None / [ ] Details:`
 - **Participant outcome:** `[ ] PASS / [ ] FAIL`
-- **Actual participant feedback:** 
-- **Observed usability problems:** 
+- **Actual participant feedback:**
+- **Observed usability problems:**
 
 ---
 
 ### Participant 4 (P4) — NOT YET TESTED
 - **First-time-user confirmation:** `[ ] Yes / [ ] No`
-- **Actual trial date and time:** 
-- **Device and browser:** 
-- **Task start time:** 
-- **Task completion time:** 
-- **Elapsed time (seconds):** 
+- **Actual trial date and time:**
+- **Device and browser:**
+- **Task start time:**
+- **Task completion time:**
+- **Elapsed time (seconds):**
 - **Correct source account selected:** `[ ] Yes / [ ] No`
 - **Correct recipient account entered (1000000003):** `[ ] Yes / [ ] No`
 - **Correct amount entered (₹500):** `[ ] Yes / [ ] No`
 - **Transfer completed successfully:** `[ ] Yes / [ ] No`
-- **Assistance requested or received:** `[ ] None / [ ] Details:` 
+- **Assistance requested or received:** `[ ] None / [ ] Details:`
 - **Participant outcome:** `[ ] PASS / [ ] FAIL`
-- **Actual participant feedback:** 
-- **Observed usability problems:** 
+- **Actual participant feedback:**
+- **Observed usability problems:**
 
 ---
 
 ### Participant 5 (P5) — NOT YET TESTED
 - **First-time-user confirmation:** `[ ] Yes / [ ] No`
-- **Actual trial date and time:** 
-- **Device and browser:** 
-- **Task start time:** 
-- **Task completion time:** 
-- **Elapsed time (seconds):** 
+- **Actual trial date and time:**
+- **Device and browser:**
+- **Task start time:**
+- **Task completion time:**
+- **Elapsed time (seconds):**
 - **Correct source account selected:** `[ ] Yes / [ ] No`
 - **Correct recipient account entered (1000000003):** `[ ] Yes / [ ] No`
 - **Correct amount entered (₹500):** `[ ] Yes / [ ] No`
 - **Transfer completed successfully:** `[ ] Yes / [ ] No`
-- **Assistance requested or received:** `[ ] None / [ ] Details:` 
+- **Assistance requested or received:** `[ ] None / [ ] Details:`
 - **Participant outcome:** `[ ] PASS / [ ] FAIL`
-- **Actual participant feedback:** 
-- **Observed usability problems:** 
+- **Actual participant feedback:**
+- **Observed usability problems:**
 
 ---
 

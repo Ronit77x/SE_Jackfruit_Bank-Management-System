@@ -79,6 +79,19 @@
   margin-left: 0;
 }
 @media (max-width: 600px) {
+  #search-form .field-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  #search-form .field-row input,
+  #search-form .field-row button {
+    width: 100%;
+    margin-top: 0;
+  }
+  #search-form .field-row button + button {
+    margin-left: 0;
+  }
   .details-list {
     grid-template-columns: 1fr;
     gap: 0.15rem 0;

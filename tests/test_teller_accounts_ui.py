@@ -106,6 +106,20 @@ def test_teller_accounts_node_checks():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is not installed")
+def test_teller_accounts_rendered_browser_regression():
+    """Execute rendered browser regression measuring search input width and overflow at 360px viewport."""
+    result = subprocess.run(
+        ["node", str(ROOT / "tests" / "ui" / "teller_browser_check.js")],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    if result.returncode != 0 and "Cannot find module 'playwright'" in (result.stderr + result.stdout):
+        pytest.skip("Playwright module is not installed in this environment")
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_teller_open_account_new_customer_real_backend(client, db):
     teller = create_user(db, role=ROLE_TELLER)
     headers = login_user(client, teller)

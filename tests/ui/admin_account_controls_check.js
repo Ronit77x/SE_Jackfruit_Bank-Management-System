@@ -20,11 +20,14 @@ const { chromium } = require("playwright");
   page.on("request", request => { if (request.method() === "PATCH") { requests.push(request.postDataJSON()); } });
   let dismissClose = true;
   page.on("dialog", dialog => { if (dismissClose) { dialog.dismiss(); } else { dialog.accept(); } });
-  await page.route("**/accounts/*/status", route => route.fulfill({
-    status: 200,
-    contentType: "application/json",
-    body: JSON.stringify({ id: 1, account_number: "1000000001", status: "Frozen", balance: "0.00", type: "Savings" }),
-  }));
+  await page.route("**/accounts/*/status", route => {
+    if (route.request().url().includes("9999999999")) {
+      return route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: '<script>alert(1)</script> Account not found' }) });
+    }
+    const action = route.request().postDataJSON().action;
+    const status = { freeze: "Frozen", unfreeze: "Active", close: "Closed" }[action];
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: 1, account_number: "1000000001", status, balance: "0.00", type: "Savings" }) });
+  });
   await page.goto("http://127.0.0.1:8768/ui/admin.html");
   await page.locator("#account-identifier").fill("1000000001");
   await page.locator("button[data-status-action=close]").click();
@@ -35,12 +38,19 @@ const { chromium } = require("playwright");
   if (!requests.length || requests[0].action !== "freeze" || !(await page.locator("#account-status-message").textContent()).includes("Frozen")) {
     throw new Error("Freeze action did not submit or render success");
   }
-  await page.unroute("**/accounts/*/status");
-  await page.route("**/accounts/*/status", route => route.fulfill({
-    status: 404,
-    contentType: "application/json",
-    body: JSON.stringify({ detail: '<script>alert(1)</script> Account not found' }),
-  }));
+  await page.locator("#account-identifier").fill("1000000001");
+  await page.locator("button[data-status-action=unfreeze]").click();
+  await page.locator("#account-status-message").waitFor();
+  if (requests[1].action !== "unfreeze" || !(await page.locator("#account-status-message").textContent()).includes("Active")) {
+    throw new Error("Unfreeze action did not submit or render success");
+  }
+  dismissClose = false;
+  await page.locator("#account-identifier").fill("1000000001");
+  await page.locator("button[data-status-action=close]").click();
+  await page.locator("#account-status-message").waitFor();
+  if (requests[2].action !== "close" || !(await page.locator("#account-status-message").textContent()).includes("Closed")) {
+    throw new Error("Close action did not submit or render success");
+  }
   await page.locator("#account-identifier").fill("9999999999");
   await page.locator("button[data-status-action=unfreeze]").click();
   await page.locator("#account-status-message").waitFor();

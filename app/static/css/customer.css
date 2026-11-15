@@ -1,0 +1,10 @@
+/* Customer activity page: keep wide tables inside their own scroll region. */
+[hidden] { display: none !important; }
+main, .card, .row > div { min-width: 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.actions button + button { margin-left: 0; }
+button:disabled { opacity: 0.6; cursor: wait; }
+#account-summary, #history-summary { overflow-wrap: anywhere; }
+.table-wrap:focus { outline: 3px solid #9cc4ee; outline-offset: 2px; }
+caption { text-align: left; margin-bottom: 0.5rem; }
+@media (max-width: 400px) { .actions button { flex: 1 1 100%; } }

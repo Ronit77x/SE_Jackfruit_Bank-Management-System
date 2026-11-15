@@ -19,6 +19,7 @@ from app.constants import (
     ROLE_TELLER,
 )
 from app.models import Account, AuditLog, Customer
+from app.security import mask_account_number
 from tests.auth_helpers import act_as
 
 
@@ -418,7 +419,8 @@ def test_successful_transitions_create_audit_records(client, db, active_account,
     assert audit_freeze is not None
     assert audit_freeze.outcome == "SUCCESS"
     assert audit_freeze.timestamp is not None
-    assert active_account.account_number in audit_freeze.details
+    assert mask_account_number(active_account.account_number) in audit_freeze.details
+    assert active_account.account_number not in audit_freeze.details
     assert "status changed from Active to Frozen" in audit_freeze.details
 
     # 2. Unfreeze
@@ -435,6 +437,8 @@ def test_successful_transitions_create_audit_records(client, db, active_account,
     )
     assert audit_unfreeze is not None
     assert audit_unfreeze.outcome == "SUCCESS"
+    assert mask_account_number(active_account.account_number) in audit_unfreeze.details
+    assert active_account.account_number not in audit_unfreeze.details
     assert "status changed from Frozen to Active" in audit_unfreeze.details
 
     # 3. Close zero-balance account
@@ -451,6 +455,8 @@ def test_successful_transitions_create_audit_records(client, db, active_account,
     )
     assert audit_close is not None
     assert audit_close.outcome == "SUCCESS"
+    assert mask_account_number(zero_balance_account.account_number) in audit_close.details
+    assert zero_balance_account.account_number not in audit_close.details
     assert "status changed from Active to Closed" in audit_close.details
 
 
@@ -495,6 +501,114 @@ def test_atomic_rollback_on_audit_or_commit_failure(client, db, active_account):
         .count()
         == 0
     )
+
+
+def test_atomic_rollback_on_unfreeze_commit_failure(client, db, active_account):
+    act_as(ROLE_ADMIN, user_id=1)
+    # First freeze successfully
+    res_freeze = client.patch(
+        f"/accounts/{active_account.account_number}/status",
+        json={"status": "Frozen"},
+    )
+    assert res_freeze.status_code == 200
+
+    # Attempt to unfreeze with commit failure
+    with patch.object(db, "commit", side_effect=RuntimeError("DB Commit Crash")):
+        with pytest.raises(RuntimeError):
+            client.patch(
+                f"/accounts/{active_account.account_number}/status",
+                json={"status": "Active"},
+            )
+
+    # Account status must remain Frozen
+    db.expire_all()
+    assert db.get(Account, active_account.id).status == ACCOUNT_FROZEN
+
+    # No unfreeze audit log entry
+    assert (
+        db.query(AuditLog)
+        .filter(AuditLog.action == "ACCOUNT_UNFREEZE")
+        .count()
+        == 0
+    )
+
+
+def test_atomic_rollback_on_close_commit_failure(client, db, zero_balance_account):
+    act_as(ROLE_ADMIN, user_id=1)
+
+    with patch.object(db, "commit", side_effect=RuntimeError("DB Commit Crash")):
+        with pytest.raises(RuntimeError):
+            client.patch(
+                f"/accounts/{zero_balance_account.account_number}/status",
+                json={"status": "Closed"},
+            )
+
+    # Account status must remain Active
+    db.expire_all()
+    assert db.get(Account, zero_balance_account.id).status == ACCOUNT_ACTIVE
+
+    # No close audit log entry
+    assert (
+        db.query(AuditLog)
+        .filter(AuditLog.action == "ACCOUNT_CLOSE")
+        .count()
+        == 0
+    )
+
+
+def test_freeze_audit_masks_account_number(client, db, active_account):
+    act_as(ROLE_ADMIN, user_id=101)
+    res = client.patch(
+        f"/accounts/{active_account.account_number}/status",
+        json={"status": "Frozen"},
+    )
+    assert res.status_code == 200
+    entry = (
+        db.query(AuditLog)
+        .filter(AuditLog.action == "ACCOUNT_FREEZE", AuditLog.user_id == 101)
+        .first()
+    )
+    assert entry is not None
+    assert mask_account_number(active_account.account_number) in entry.details
+    assert active_account.account_number not in entry.details
+
+
+def test_unfreeze_audit_masks_account_number(client, db, active_account):
+    act_as(ROLE_ADMIN, user_id=102)
+    client.patch(
+        f"/accounts/{active_account.account_number}/status",
+        json={"status": "Frozen"},
+    )
+    res = client.patch(
+        f"/accounts/{active_account.account_number}/status",
+        json={"status": "Active"},
+    )
+    assert res.status_code == 200
+    entry = (
+        db.query(AuditLog)
+        .filter(AuditLog.action == "ACCOUNT_UNFREEZE", AuditLog.user_id == 102)
+        .first()
+    )
+    assert entry is not None
+    assert mask_account_number(active_account.account_number) in entry.details
+    assert active_account.account_number not in entry.details
+
+
+def test_close_audit_masks_account_number(client, db, zero_balance_account):
+    act_as(ROLE_ADMIN, user_id=103)
+    res = client.patch(
+        f"/accounts/{zero_balance_account.account_number}/status",
+        json={"status": "Closed"},
+    )
+    assert res.status_code == 200
+    entry = (
+        db.query(AuditLog)
+        .filter(AuditLog.action == "ACCOUNT_CLOSE", AuditLog.user_id == 103)
+        .first()
+    )
+    assert entry is not None
+    assert mask_account_number(zero_balance_account.account_number) in entry.details
+    assert zero_balance_account.account_number not in entry.details
 
 
 # ==================== F. REQUEST VALIDATION ====================

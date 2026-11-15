@@ -199,6 +199,16 @@ function createTestServer() {
 
     // Fill transfer details
     await page.fill("#toAccountInput", "1000000003");
+
+    // Verify invalid decimal precision (500.999) is rejected and does not advance
+    await page.fill("#amountInput", "500.999");
+    await page.click("#btnReview");
+    const isErrorVisible = await page.$eval("#amountError", (el) => !el.hidden && el.textContent.includes("two decimal places"));
+    assert.strictEqual(isErrorVisible, true, "Amount with >2 decimal places must show validation error");
+    const didNotAdvance = await page.$eval("#stepReview", (el) => el.hidden);
+    assert.strictEqual(didNotAdvance, true, "Form must not advance to review with invalid precision");
+
+    // Fill valid amount
     await page.fill("#amountInput", "500.00");
 
     // Click Review button

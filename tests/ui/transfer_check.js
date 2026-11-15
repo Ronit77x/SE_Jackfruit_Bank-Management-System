@@ -346,6 +346,54 @@ function buildFakeDocument() {
   assert.strictEqual(elementsById["amountError"].hidden, false);
   assert.ok(elementsById["amountError"].textContent.includes("Insufficient funds"));
 
+  // Amount decimal precision checks (BMS-NF-004 / Review observation)
+  // 500 — accepted
+  amountInput.value = "500";
+  amountInput.dispatchEvent({ type: "input" });
+  assert.strictEqual(elementsById["amountError"].hidden, true, "500 must be accepted");
+
+  // 500.5 — accepted
+  amountInput.value = "500.5";
+  amountInput.dispatchEvent({ type: "input" });
+  assert.strictEqual(elementsById["amountError"].hidden, true, "500.5 must be accepted");
+
+  // 500.50 — accepted
+  amountInput.value = "500.50";
+  amountInput.dispatchEvent({ type: "input" });
+  assert.strictEqual(elementsById["amountError"].hidden, true, "500.50 must be accepted");
+
+  // 500.999 — rejected (must not be silently rounded)
+  amountInput.value = "500.999";
+  amountInput.dispatchEvent({ type: "input" });
+  assert.strictEqual(elementsById["amountError"].hidden, false, "500.999 must be rejected");
+  assert.ok(elementsById["amountError"].textContent.includes("two decimal places"), "Must explain two decimal places limit");
+
+  // 500.1234 — rejected
+  amountInput.value = "500.1234";
+  amountInput.dispatchEvent({ type: "input" });
+  assert.strictEqual(elementsById["amountError"].hidden, false, "500.1234 must be rejected");
+  assert.ok(elementsById["amountError"].textContent.includes("two decimal places"), "Must explain two decimal places limit");
+
+  // Empty input — rejected
+  amountInput.value = "";
+  amountInput.dispatchEvent({ type: "input" });
+  assert.strictEqual(windowObj.validateAmount(), false, "Empty amount must be rejected");
+
+  // Zero input — rejected
+  amountInput.value = "0";
+  amountInput.dispatchEvent({ type: "input" });
+  assert.strictEqual(elementsById["amountError"].hidden, false, "Zero must be rejected");
+
+  // Negative input — rejected
+  amountInput.value = "-500";
+  amountInput.dispatchEvent({ type: "input" });
+  assert.strictEqual(elementsById["amountError"].hidden, false, "Negative amount must be rejected");
+
+  // Non-numeric input — rejected
+  amountInput.value = "abc";
+  amountInput.dispatchEvent({ type: "input" });
+  assert.strictEqual(elementsById["amountError"].hidden, false, "Non-numeric input must be rejected");
+
   // Valid transfer amount
   amountInput.value = "1000.00";
   amountInput.dispatchEvent({ type: "input" });

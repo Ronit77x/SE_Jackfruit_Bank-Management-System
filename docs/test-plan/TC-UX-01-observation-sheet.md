@@ -159,7 +159,7 @@ $$\text{Usability Pass Rate} = \left( \frac{\text{Passing Participants}}{5} \rig
 - **Total Participants Tested:** `[ 0 / 5 ] (Pending Execution)`
 - **Total Passing Participants:** `[ 0 / 5 ]`
 - **Empirical Pass Rate:** `[ PENDING ]`
-- **Sprint 2 Evidence Scope:** 2 of 5 participants (P1 and P2) will be conducted and documented as partial empirical evidence for PR #60; full 5/5 trials completed prior to release freeze.
+- **Sprint 2 Evidence Scope:** Automated and simulated UI verification completed; genuine independent human participant trials remain pending (0 of 5 completed). Full 5-participant physical trials required prior to final release freeze.
 - **Target ($\ge 90\%$):** Requires 5/5 passes for full acceptance sign-off.
 - **BMS-NF-004 Status:** **PENDING EMPIRICAL TRIAL EXECUTION**
 - **Evaluator Signature:** Member 2 (Vijay Kumar) — `[ Pending Execution ]`

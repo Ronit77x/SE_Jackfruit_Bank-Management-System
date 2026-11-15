@@ -8,7 +8,7 @@
 - **Sprint:** Sprint 2
 - **Protocol Status:** READY FOR EXECUTION (Empirical Validation Pending)
 - **Automated Contract Status:** PASS (Automated UI & API regression tests)
-- **Human Participant Status:** PENDING (Partial evidence: 2 of 5 participants for PR #60; 5 participants for final release)
+- **Human Participant Status:** PENDING (0 of 5 trials completed; awaiting genuine independent human participant testing)
 
 ---
 

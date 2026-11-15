@@ -219,7 +219,7 @@
 
   function validateAmount() {
     var amountInput = document.getElementById("amountInput");
-    var amountVal = amountInput ? parseFloat(amountInput.value) : NaN;
+    var raw = amountInput ? String(amountInput.value).trim() : "";
     var errEl = document.getElementById("amountError");
     var fromSelect = document.getElementById("fromAccountSelect");
     var fromAccNo = fromSelect ? fromSelect.value : "";
@@ -230,7 +230,34 @@
       errEl.textContent = "";
     }
 
+    if (!raw) {
+      return false;
+    }
+
+    // Reject non-numeric, negative, or invalid format
+    if (!/^\d+(\.\d+)?$/.test(raw)) {
+      if (errEl) {
+        errEl.textContent = "Please enter a valid numeric amount.";
+        errEl.hidden = false;
+      }
+      return false;
+    }
+
+    // Reject amounts with more than two decimal places (prevent silent rounding)
+    if (/\.\d{3,}$/.test(raw)) {
+      if (errEl) {
+        errEl.textContent = "Amount cannot have more than two decimal places.";
+        errEl.hidden = false;
+      }
+      return false;
+    }
+
+    var amountVal = parseFloat(raw);
     if (isNaN(amountVal) || amountVal <= 0) {
+      if (errEl) {
+        errEl.textContent = "Amount must be greater than zero.";
+        errEl.hidden = false;
+      }
       return false;
     }
 
@@ -273,6 +300,7 @@
 
     var fromAccNo = fromSelect ? fromSelect.value : "";
     var toAccNo = toInput ? toInput.value.trim() : "";
+    var rawAmount = amountInput ? String(amountInput.value).trim() : "";
     var amount = amountInput ? parseFloat(amountInput.value) : NaN;
 
     if (!fromAccNo) {
@@ -286,7 +314,11 @@
     }
 
     if (!validateAmount() || isNaN(amount) || amount <= 0) {
-      showAlert("Please enter a valid transfer amount.", false);
+      if (rawAmount && /\.\d{3,}$/.test(rawAmount)) {
+        showAlert("Amount cannot have more than two decimal places.", false);
+      } else {
+        showAlert("Please enter a valid transfer amount.", false);
+      }
       return;
     }
 
@@ -505,5 +537,6 @@
   window.executeTransfer = executeTransfer;
   window.proceedToReview = proceedToReview;
   window.backToEdit = backToEdit;
+  window.validateAmount = validateAmount;
   window.isEligibleStatus = isEligibleStatus;
 })();

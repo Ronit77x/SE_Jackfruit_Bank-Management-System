@@ -640,12 +640,23 @@ def test_backend_transfer_validation_enforces_business_rules_independent_of_fron
     assert res_same.status_code == 400
     assert res_same.json()["code"] == "INVALID_TRANSFER"
 
-    # 3. Exceeds transfer limit (limit is 50,000) -> 422 TRANSFER_LIMIT_EXCEEDED
+    # 3. Exceeds transfer limit (configured limit is 100,000.00) -> 422 TRANSFER_LIMIT_EXCEEDED
+    # Fund source account with 200,000.00 so balance is completely sufficient (leaves 50,000 >= 1,000 min balance).
+    # This guarantees that INSUFFICIENT_FUNDS cannot cause this test to pass accidentally.
+    a1.balance = Decimal("200000.00")
+    db.commit()
+
     res_limit = client.post(
         "/transactions/transfer",
-        json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "60000.00"},
+        json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "150000.00"},
     )
     assert res_limit.status_code == 422
+    assert res_limit.json()["code"] == "TRANSFER_LIMIT_EXCEEDED"
+    assert "Transfer limit of 100000 exceeded" in res_limit.json()["message"]
+
+    # Restore a1 balance to 10,000.00 to keep subsequent minimum-balance tests isolated
+    a1.balance = Decimal("10000.00")
+    db.commit()
 
     # 4. Violates minimum balance (Savings requires 1,000 min balance; a1 has 10,000; transferring 9,500 leaves 500)
     res_min_bal = client.post(
@@ -715,6 +726,15 @@ def test_backend_transfer_validation_enforces_auth_roles_and_input_rules(client,
         json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "-100.00"},
     )
     assert res_negative.status_code == 400
+
+    # 6. More than 2 decimal places -> 400 VALIDATION_ERROR (Pydantic decimal_places constraint)
+    res_precision = client.post(
+        "/transactions/transfer",
+        json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "500.999"},
+    )
+    assert res_precision.status_code == 400
+    assert res_precision.json()["code"] == "VALIDATION_ERROR"
+    assert "decimal" in res_precision.json()["message"]
 
     # Ensure balances remain completely unchanged
     db.refresh(a1)

@@ -1,0 +1,71 @@
+R0-1
+INFO:     Started server process [43848]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8770 (Press CTRL+C to quit)
+
+R1-1
+INFO:     Started server process [37884]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8770 (Press CTRL+C to quit)
+
+R2-1
+INFO:     Started server process [11968]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8770 (Press CTRL+C to quit)
+
+R3-1
+INFO:     Started server process [44360]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8770 (Press CTRL+C to quit)
+
+R0-2
+INFO:     Started server process [39044]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8770 (Press CTRL+C to quit)
+
+R1-2
+INFO:     Started server process [21704]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8770 (Press CTRL+C to quit)
+
+R2-2
+INFO:     Started server process [33436]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8770 (Press CTRL+C to quit)
+
+R3-2
+INFO:     Started server process [28228]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8770 (Press CTRL+C to quit)
+
+R0-3
+INFO:     Started server process [43108]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8770 (Press CTRL+C to quit)
+
+R1-3
+INFO:     Started server process [43416]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8770 (Press CTRL+C to quit)
+
+R2-3
+INFO:     Started server process [31648]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8770 (Press CTRL+C to quit)
+
+R3-3
+INFO:     Started server process [44696]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8770 (Press CTRL+C to quit)

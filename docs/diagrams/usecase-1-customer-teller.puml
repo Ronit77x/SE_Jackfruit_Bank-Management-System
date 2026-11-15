@@ -1,0 +1,35 @@
+@startuml
+left to right direction
+skinparam shadowing false
+actor Teller
+actor Customer
+rectangle "Bank Management System" {
+usecase "Log in" as Login
+usecase "Change password" as Password
+usecase "Open account" as UC0
+usecase "Update customer details" as UC1
+usecase "Search customer or account" as UC2
+usecase "Record deposit" as UC3
+usecase "Record withdrawal" as UC4
+usecase "View own accounts and balance" as UC5
+usecase "Transfer funds" as UC6
+usecase "View transaction history" as UC7
+usecase "Download statement" as UC8
+}
+Teller -- Login
+Customer -- Login
+Teller -- Password
+Customer -- Password
+Teller -- UC0
+Teller -- UC1
+Teller -- UC2
+Teller -- UC3
+Teller -- UC4
+Customer -- UC5
+Customer -- UC6
+Customer -- UC7
+Customer -- UC8
+note bottom
+All banking use cases require authentication and their applicable role and business rules.
+end note
+@enduml

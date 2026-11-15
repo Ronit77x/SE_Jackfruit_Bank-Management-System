@@ -1,6 +1,5 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from zoneinfo import ZoneInfo
 
 import pytest
 from cryptography.fernet import Fernet
@@ -96,7 +95,8 @@ def test_account_opening_flow_reports_opening_deposit_exactly_once(client, db, m
     assert response.status_code == 201
     account_id = response.json()["account_id"]
     transaction = db.query(Transaction).filter_by(account_id=account_id, type=TXN_OPENING_DEPOSIT).one()
-    report_date = transaction.created_at.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("Asia/Kolkata")).date()
+    ist = timezone(timedelta(hours=5, minutes=30))
+    report_date = transaction.created_at.replace(tzinfo=timezone.utc).astimezone(ist).date()
 
     act_as("Admin", user_id=8)
     report_response = client.get("/admin/reports/daily", params={"date": report_date.isoformat()})

@@ -222,14 +222,18 @@ def test_user_with_temporary_password_cannot_access_accounts(client, sample_data
 
 # ==================== C. WEB UI SERVING ====================
 
-def test_transfer_ui_served_at_transfer_endpoint(client):
-    """GET /transfer serves the HTML/CSS/JS customer transfer interface."""
-    response = client.get("/transfer")
+def test_transfer_ui_served_at_ui_static_route_with_expected_assets(client):
+    """GET /ui/transfer.html serves the new canonical page and loads expected CSS and JS assets."""
+    from app.routers.accounts import STATIC_TRANSFER_HTML
+    assert STATIC_TRANSFER_HTML.exists(), "Canonical app/static/transfer.html must exist"
+
+    response = client.get("/ui/transfer.html")
     assert response.status_code == 200
     assert "text/html" in response.headers.get("content-type", "")
 
-    # Check key UI structure elements
     html = response.text
+    # Canonical page content check
+    assert html == STATIC_TRANSFER_HTML.read_text(encoding="utf-8")
     assert "Transfer Money" in html
     assert "fromAccountSelect" in html
     assert "toAccountInput" in html
@@ -238,13 +242,68 @@ def test_transfer_ui_served_at_transfer_endpoint(client):
     assert "btnConfirmSend" in html
     assert "executeTransfer" in html
 
+    # Verify expected asset references exist in the canonical HTML
+    assert '<link rel="stylesheet" href="/ui/css/style.css">' in html
+    assert '<link rel="stylesheet" href="/ui/css/transfer.css">' in html
+    assert '<script src="/ui/js/api.js"></script>' in html
+    assert '<script src="/ui/js/transfer.js"></script>' in html
 
-def test_transfer_ui_served_at_alias_route(client):
-    """GET /transfer-ui serves the same interface."""
-    response = client.get("/transfer-ui")
-    assert response.status_code == 200
-    assert "text/html" in response.headers.get("content-type", "")
-    assert "Transfer Money" in response.text
+    # Verify that all referenced CSS and JS assets are successfully served
+    assert client.get("/ui/css/style.css").status_code == 200
+    assert client.get("/ui/css/transfer.css").status_code == 200
+    assert client.get("/ui/js/api.js").status_code == 200
+    assert client.get("/ui/js/transfer.js").status_code == 200
+
+
+def test_transfer_and_alias_endpoints_serve_canonical_page_when_present(client):
+    """GET /transfer and /transfer-ui serve the canonical static page when it exists."""
+    from app.routers.accounts import FRONTEND_TRANSFER_HTML, STATIC_TRANSFER_HTML
+    assert STATIC_TRANSFER_HTML.exists()
+    assert FRONTEND_TRANSFER_HTML.exists()
+
+    expected_canonical_content = STATIC_TRANSFER_HTML.read_text(encoding="utf-8")
+
+    # 1. Primary route: GET /transfer
+    res_transfer = client.get("/transfer")
+    assert res_transfer.status_code == 200
+    assert "text/html" in res_transfer.headers.get("content-type", "")
+    assert res_transfer.text == expected_canonical_content
+    assert "/ui/css/transfer.css" in res_transfer.text
+    assert "/ui/js/transfer.js" in res_transfer.text
+
+    # 2. Alias route: GET /transfer-ui
+    res_alias = client.get("/transfer-ui")
+    assert res_alias.status_code == 200
+    assert "text/html" in res_alias.headers.get("content-type", "")
+    assert res_alias.text == expected_canonical_content
+
+    # Confirms it is serving the canonical page, distinct from the legacy file
+    assert res_transfer.text != FRONTEND_TRANSFER_HTML.read_text(encoding="utf-8")
+
+
+def test_transfer_endpoints_fallback_to_legacy_frontend_only_when_canonical_absent(client, monkeypatch):
+    """GET /transfer and /transfer-ui fall back to frontend/transfer.html ONLY when canonical page is absent."""
+    from app.routers.accounts import FRONTEND_TRANSFER_HTML
+    assert FRONTEND_TRANSFER_HTML.exists(), "Legacy frontend/transfer.html fallback must exist"
+
+    # Simulate canonical static file being absent
+    monkeypatch.setattr(
+        "app.routers.accounts.STATIC_TRANSFER_HTML",
+        Path("non_existent_canonical_transfer.html"),
+    )
+
+    expected_legacy_content = FRONTEND_TRANSFER_HTML.read_text(encoding="utf-8")
+
+    # Fallback works on /transfer
+    res_transfer = client.get("/transfer")
+    assert res_transfer.status_code == 200
+    assert "text/html" in res_transfer.headers.get("content-type", "")
+    assert res_transfer.text == expected_legacy_content
+
+    # Fallback works on /transfer-ui
+    res_alias = client.get("/transfer-ui")
+    assert res_alias.status_code == 200
+    assert res_alias.text == expected_legacy_content
 
 
 # ==================== D. DEFENSIVE & EDGE CASE TESTS ====================
@@ -326,15 +385,23 @@ def test_customer_accounts_with_frozen_and_closed_status(client, db, sample_data
     assert statuses["1000000099"] == ACCOUNT_CLOSED
 
 
-def test_transfer_ui_fallback_if_file_missing(client, monkeypatch):
-    """If transfer.html is missing, endpoint returns 404 cleanly instead of crashing."""
+def test_transfer_ui_fallback_if_both_files_missing(client, monkeypatch):
+    """If both canonical and legacy transfer.html are missing, endpoint returns 404 cleanly instead of crashing."""
     monkeypatch.setattr(
         "app.routers.accounts.FRONTEND_TRANSFER_HTML",
         Path("non_existent_path_to_transfer.html"),
     )
-    response = client.get("/transfer")
-    assert response.status_code == 404
-    assert "Transfer UI not found" in response.text
+    monkeypatch.setattr(
+        "app.routers.accounts.STATIC_TRANSFER_HTML",
+        Path("non_existent_path_to_transfer.html"),
+    )
+    res_transfer = client.get("/transfer")
+    assert res_transfer.status_code == 404
+    assert "Transfer UI not found" in res_transfer.text
+
+    res_alias = client.get("/transfer-ui")
+    assert res_alias.status_code == 404
+    assert "Transfer UI not found" in res_alias.text
 
 
 # ==================== E. LOGOUT & TC-UX-01 ALIGNMENT TESTS ====================
@@ -447,6 +514,26 @@ def test_transfer_ui_contract_excludes_ineligible_source_accounts():
     assert 'if (!isEligibleStatus(acc.status))' in content
     assert 'if (!sourceAcc || !isEligibleStatus(sourceAcc.status))' in content
     assert 'Selected account is ${acc.status || "unavailable"} and cannot perform transfers.' in content
+
+
+def test_canonical_transfer_ui_contract_excludes_ineligible_source_accounts():
+    """Canonical app/static/transfer.html and transfer.js must exclude and disable non-active accounts."""
+    from app.routers.accounts import STATIC_TRANSFER_HTML
+    assert STATIC_TRANSFER_HTML.exists()
+
+    static_dir = STATIC_TRANSFER_HTML.parent
+    transfer_js_path = static_dir / "js" / "transfer.js"
+    assert transfer_js_path.exists()
+    js_content = transfer_js_path.read_text(encoding="utf-8")
+
+    assert "function isEligibleStatus(status)" in js_content
+    assert 'status.trim().toLowerCase() === "active"' in js_content
+    assert "eligibleAccounts" in js_content
+    assert "ineligibleAccounts" in js_content
+    assert "No eligible active accounts available" in js_content
+    assert "Excluded unavailable accounts:" in js_content
+    assert "No accounts can be used for transfers right now." in js_content
+    assert "opt.disabled = true" in js_content
 
 
 def test_backend_transfer_validation_rejects_frozen_source_account(client, db, sample_data):

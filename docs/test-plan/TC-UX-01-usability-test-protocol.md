@@ -1,14 +1,14 @@
 # Usability Test Protocol: TC-UX-01 (Fund Transfer Flow)
 
 - **Test Case ID:** `TC-UX-01`
-- **User Story:** `[US-14] Usability of fund transfer flow` (GitHub Issue #12)
+- **User Story:** `[US-14] Usability of fund transfer flow` (Part of #12)
 - **Requirement:** `BMS-NF-004` — First-time-user transfer usability
 - **Component:** `DS-UI` (Customer Web Interface)
 - **Assigned Member:** Member 2 (Vijay Kumar)
 - **Sprint:** Sprint 2
 - **Protocol Status:** READY FOR EXECUTION (Empirical Validation Pending)
 - **Automated Contract Status:** PASS (Automated UI & API regression tests)
-- **Human Participant Status:** PENDING (Awaiting 5-user physical trial)
+- **Human Participant Status:** PENDING (Partial evidence: 2 of 5 participants for PR #60; 5 participants for final release)
 
 ---
 
@@ -30,7 +30,7 @@ Verify that the customer-facing fund transfer interface is intuitive, transparen
 ## 2. Test Environment & Participant Setup
 
 - **Platform:** Web browser (Chrome, Edge, or Firefox) at desktop or mobile resolution ($\ge 360\text{ px}$).
-- **URL:** `http://127.0.0.1:8000/transfer`
+- **URL:** `http://127.0.0.1:8000/ui/transfer.html` (or `http://127.0.0.1:8000/transfer`)
 - **Test Environment Preparation:**
   1. Initialize fresh seed data:
      ```powershell
@@ -40,7 +40,7 @@ Verify that the customer-facing fund transfer interface is intuitive, transparen
      ```powershell
      uvicorn app.main:app --reload
      ```
-  3. Ensure network accessibility and open `http://127.0.0.1:8000/transfer`.
+  3. Ensure network accessibility and open `http://127.0.0.1:8000/ui/transfer.html`.
 - **Test Dataset & Account State:**
   - Participant logs in as Customer 1 (**Asha Rao**, username `1`, demo password `Passw0rd!`).
   - Active source account: Savings Account `1000000001` (Balance: ₹10,000.00, Status: Active).
@@ -56,7 +56,7 @@ Verify that the customer-facing fund transfer interface is intuitive, transparen
    - Welcome the participant.
    - Explain that the **software** is being tested, not the user.
    - Inform the participant that the session will be timed.
-   - Open `http://127.0.0.1:8000/transfer` with Customer 1 session active.
+   - Open `http://127.0.0.1:8000/ui/transfer.html` with Customer 1 session active.
 2. **Neutral Task Instruction (read verbatim):**
    > *"You are an account holder at Jackfruit Bank. You have logged into your web banking portal. Please transfer ₹500 from your account to recipient account number 1000000003. You may begin now."*
 3. **Observation Rules:**

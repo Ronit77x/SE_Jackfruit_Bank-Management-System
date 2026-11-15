@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bank Management System - Transfer Money</title>
+  <link rel="stylesheet" href="/ui/css/style.css">
+  <link rel="stylesheet" href="/ui/css/transfer.css">
+</head>
+<body>
+  <header id="site-header" class="site"></header>
+
+  <main>
+    <div class="steps-indicator" aria-label="Transfer steps">
+      <div class="step-item active" id="stepIndicator1">
+        <span class="step-number">1</span>
+        <span>Enter details</span>
+      </div>
+      <div class="step-divider"></div>
+      <div class="step-item" id="stepIndicator2">
+        <span class="step-number">2</span>
+        <span>Review</span>
+      </div>
+      <div class="step-divider"></div>
+      <div class="step-item" id="stepIndicator3">
+        <span class="step-number">3</span>
+        <span>Receipt</span>
+      </div>
+    </div>
+
+    <div id="globalAlert" class="message" role="alert"></div>
+
+    <!-- STEP 1: Enter Transfer Details -->
+    <section class="card" id="stepDetails" aria-labelledby="form-heading">
+      <h2 id="form-heading">Transfer Money</h2>
+      <p class="muted">Send money securely to any Jackfruit Bank account in seconds.</p>
+
+      <form id="transferForm" novalidate>
+        <div>
+          <label for="fromAccountSelect">Transfer from (Your account)</label>
+          <select id="fromAccountSelect" required>
+            <option value="">Loading your accounts…</option>
+          </select>
+          <div class="field-helper" id="fromAccountHelp">Select the account you want to send money from.</div>
+
+          <div class="balance-card" id="balanceDisplay" hidden>
+            <div class="balance-card-inner">
+              <div>
+                <span id="accountTypeDisplay">Savings Account</span>
+                <div class="muted" id="minBalanceHelp">Minimum balance required: ₹1,000.00</div>
+              </div>
+              <div class="balance-amount" id="accountBalanceDisplay">₹0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label for="toAccountInput">Transfer to (Recipient account number)</label>
+          <input
+            type="text"
+            id="toAccountInput"
+            maxlength="10"
+            inputmode="numeric"
+            placeholder="Enter 10-digit account number (e.g. 1000000003)"
+            required
+          >
+          <div class="field-helper" id="toAccountHelp">Enter the exact 10-digit destination account number.</div>
+          <div class="field-error" id="toAccountError" hidden></div>
+        </div>
+
+        <div>
+          <label for="amountInput">Transfer amount (INR)</label>
+          <input
+            type="number"
+            id="amountInput"
+            step="0.01"
+            min="1"
+            max="100000"
+            placeholder="0.00"
+            required
+          >
+          <div class="quick-amounts">
+            <span class="muted quick-pick-label">Quick pick:</span>
+            <button type="button" class="quick-amount-btn" data-amount="500">₹500</button>
+            <button type="button" class="quick-amount-btn" data-amount="1000">₹1,000</button>
+            <button type="button" class="quick-amount-btn" data-amount="2000">₹2,000</button>
+            <button type="button" class="quick-amount-btn" data-amount="5000">₹5,000</button>
+          </div>
+          <div class="field-helper" id="amountHelp">Limit: ₹1,00,000 per transaction. Fee: ₹0 (Free transfer).</div>
+          <div class="field-error" id="amountError" hidden></div>
+        </div>
+
+        <button type="submit" id="btnReview">Review transfer details →</button>
+      </form>
+    </section>
+
+    <!-- STEP 2: Review & Confirmation -->
+    <section class="card" id="stepReview" aria-labelledby="review-heading" hidden>
+      <h2 id="review-heading">Review Transfer</h2>
+      <p class="muted">Please verify the recipient and transfer amount before confirming. Money will be sent immediately.</p>
+
+      <div class="summary-list">
+        <div class="summary-row">
+          <span class="summary-label">From account</span>
+          <span class="summary-val" id="reviewFromAccount">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">To account number</span>
+          <span class="summary-val" id="reviewToAccount">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Transfer amount</span>
+          <span class="summary-val" id="reviewAmount">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Transfer fee</span>
+          <span class="summary-val free-fee">₹0.00 (Free)</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Total to deduct</span>
+          <span class="summary-val" id="reviewTotal">—</span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="secondary" id="btnBackToEdit">← Back to edit</button>
+        <button type="button" id="btnConfirmSend" data-action="executeTransfer">Confirm &amp; send transfer</button>
+      </div>
+    </section>
+
+    <!-- STEP 3: Transfer Receipt & Status -->
+    <section class="card" id="stepResult" aria-labelledby="result-heading" hidden>
+      <div id="successContent" hidden>
+        <div class="receipt-header">
+          <div class="receipt-icon success">✓</div>
+          <h2 id="result-heading">Transfer Successful!</h2>
+          <p class="muted">Your fund transfer has been processed immediately.</p>
+        </div>
+
+        <div class="summary-list">
+          <div class="summary-row">
+            <span class="summary-label">Receipt / Reference no.</span>
+            <span class="summary-val" id="receiptReference">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Amount transferred</span>
+            <span class="summary-val" id="receiptAmount">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Sent to account</span>
+            <span class="summary-val" id="receiptToAccount">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Updated source balance</span>
+            <span class="summary-val" id="receiptNewBalance">—</span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="secondary" id="btnPrintReceipt" data-action="printReceipt">Print receipt</button>
+          <button type="button" id="btnNewTransfer">Make another transfer</button>
+        </div>
+      </div>
+
+      <div id="failureContent" hidden>
+        <div class="receipt-header">
+          <div class="receipt-icon error">✕</div>
+          <h2 id="failureHeading">Transfer Failed</h2>
+          <p id="failureMessage" class="muted"></p>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="btnFailureBack">← Back and correct details</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/ui/js/api.js"></script>
+  <script src="/ui/js/transfer.js"></script>
+</body>
+</html>

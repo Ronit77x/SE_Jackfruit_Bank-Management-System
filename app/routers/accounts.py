@@ -1,37 +1,141 @@
-"""Account and customer endpoints. Owner: Member 2 (Vijay). Stories: US-08, US-09, US-10, US-12, US-13.
+"""Account and customer endpoints.
 
-Planned endpoints (baseline Part A section 3):
-  POST  /accounts                 open account (+ customer login with temporary password)  (Teller)
-  PUT   /customers/{id}           update contact details                                  (Teller)
-  PATCH /accounts/{id}/status     freeze / unfreeze / close                               (Admin)
-  GET   /accounts/{id}            details + balance (own accounts only)                   (Customer)
-  GET   /customers?q=             search                                                  (Teller)
+Owner: Member 2 (Vijay). Stories: US-08, US-09, US-10.
 """
 
 import re
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import (
     BaseModel,
     ConfigDict,
     EmailStr,
+    Field,
     ValidationInfo,
     field_validator,
     model_validator,
 )
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.constants import ROLE_TELLER
+from app.constants import ACCOUNT_CURRENT, ACCOUNT_SAVINGS, ROLE_CUSTOMER, ROLE_TELLER
 from app.database import get_db
 from app.deps import require_roles
 from app.errors import AppError
-from app.models import User
-from app.services.account_service import update_customer_details
+from app.models import Account, User
+from app.security import mask_account_number
+from app.services.account_service import open_account, update_customer_details
 
 router = APIRouter(tags=["accounts"])
 
+
+# ---------------------------------------------------------------------------
+# US-08: Open Account Schemas & Endpoint
+# ---------------------------------------------------------------------------
+
+class OpenAccountRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    account_type: str = Field(pattern="^(Savings|Current)$")
+    deposit: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
+    customer_id: int | None = Field(default=None, gt=0)
+
+    # Required for a new customer; ignored when customer_id is supplied.
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    date_of_birth: date | None = None
+    address: str | None = Field(default=None, min_length=1, max_length=255)
+    phone: str | None = Field(default=None, min_length=1, max_length=20)
+    email: str | None = Field(default=None, min_length=1, max_length=120)
+    id_proof_number: str | None = Field(
+        default=None, min_length=1, max_length=255
+    )
+
+
+@router.post("/accounts", status_code=status.HTTP_201_CREATED)
+def create_account(
+    payload: OpenAccountRequest,
+    db: Annotated[Session, Depends(get_db)],
+    teller=Depends(require_roles(ROLE_TELLER)),
+):
+    """Open a Savings or Current account and issue a first-time login."""
+    try:
+        result = open_account(
+            db=db,
+            account_type=payload.account_type,
+            deposit=payload.deposit,
+            customer_id=payload.customer_id,
+            name=payload.name,
+            date_of_birth=payload.date_of_birth,
+            address=payload.address,
+            phone=payload.phone,
+            email=payload.email,
+            id_proof_number=payload.id_proof_number,
+            actor_id=getattr(teller, "id", None),
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A conflicting customer or account record already exists.",
+        ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to open the account. Please try again.",
+        ) from exc
+
+    if result["temporary_password"] is None:
+        result.pop("temporary_password")
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# US-09: View Account & Balance Endpoint
+# ---------------------------------------------------------------------------
+
+@router.get("/accounts")
+def get_my_accounts(
+    db: Annotated[Session, Depends(get_db)],
+    user=Depends(require_roles(ROLE_CUSTOMER)),
+):
+    """Return the authenticated customer's account details and balances."""
+
+    if user.role != ROLE_CUSTOMER or user.customer_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Authenticated customer required.",
+        )
+
+    accounts = db.scalars(
+        select(Account).where(Account.customer_id == user.customer_id)
+    ).all()
+
+    return {
+        "accounts": [
+            {
+                "account_number": mask_account_number(account.account_number),
+                "account_type": account.type,
+                "balance": str(account.balance),
+                "status": account.status,
+            }
+            for account in accounts
+        ]
+    }
+
+
+# ---------------------------------------------------------------------------
+# US-10: Update Customer Contact Details Schemas & Endpoint
+# ---------------------------------------------------------------------------
 
 class UpdateCustomerRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)

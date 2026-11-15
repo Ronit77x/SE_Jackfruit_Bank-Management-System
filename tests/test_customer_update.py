@@ -373,3 +373,48 @@ def test_atomic_rollback_on_commit_failure(client, db, sample_customer):
         .count()
         == 0
     )
+
+
+# 18. Verify email-validator dependency is functional
+def test_email_validator_dependency_functional():
+    """Verify that email-validator is importable and validates emails via Pydantic."""
+    import email_validator
+    assert email_validator.__version__ is not None
+
+    from pydantic import BaseModel, EmailStr, ValidationError
+
+    class ModelWithEmail(BaseModel):
+        email: EmailStr
+
+    valid = ModelWithEmail(email="valid.customer@domain.com")
+    assert valid.email == "valid.customer@domain.com"
+
+    with pytest.raises(ValidationError):
+        ModelWithEmail(email="invalid-not-an-email")
+
+
+# 19. Verify customer update coexists with account opening from main
+def test_customer_update_coexists_with_account_opening(client, db, sample_customer):
+    """Verify account opening and customer contact updates function seamlessly together."""
+    act_as(ROLE_TELLER, user_id=42)
+
+    # 1. Update contact details
+    res_update = client.put(
+        f"/customers/{sample_customer.id}",
+        json={"phone": "9888877777", "email": "sunita.coexist@example.com"},
+    )
+    assert res_update.status_code == 200
+
+    # 2. Open an account for the same customer
+    res_open = client.post(
+        "/accounts",
+        json={
+            "account_type": "Savings",
+            "deposit": 1500.00,
+            "customer_id": sample_customer.id,
+        },
+    )
+    assert res_open.status_code == 201
+    data_open = res_open.json()
+    assert data_open["customer_id"] == sample_customer.id
+    assert data_open["account_type"] == "Savings"

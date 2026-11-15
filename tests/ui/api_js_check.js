@@ -87,6 +87,7 @@ const bms = window.bms;
   // money formatting
   assert.strictEqual(bms.money("1500"), "Rs 1,500.00");
   assert.strictEqual(bms.money("123456.5"), "Rs 1,23,456.50");
+  assert.strictEqual(bms.money("100999999999998.99"), "Rs 10,09,99,99,99,99,998.99");
 
   console.log("api.js checks passed");
 })().catch((error) => { console.error(error); process.exit(1); });

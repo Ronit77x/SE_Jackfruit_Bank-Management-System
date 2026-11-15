@@ -35,6 +35,19 @@
       <div id="teller-message" class="message" role="alert" aria-live="polite"></div>
     </section>
 
+    <section class="card" aria-labelledby="account-status-heading">
+      <h2 id="account-status-heading">Account status management</h2>
+      <p class="muted">Enter an account number or internal account ID. Closing requires a zero balance and cannot be undone.</p>
+      <form id="account-status-form" class="account-status-form" autocomplete="off">
+        <div><label for="account-identifier">Account identifier</label>
+        <input id="account-identifier" name="accountIdentifier" inputmode="numeric" pattern="[0-9]+" required></div>
+        <button type="submit" data-status-action="freeze">Freeze</button>
+        <button type="submit" class="secondary" data-status-action="unfreeze">Unfreeze</button>
+        <button type="submit" class="secondary" data-status-action="close">Close</button>
+      </form>
+      <div id="account-status-message" class="message" role="alert" aria-live="polite"></div>
+    </section>
+
     <section class="card">
       <h2>Audit log</h2>
       <form id="audit-form" class="row two" autocomplete="off">

@@ -20,7 +20,11 @@ from app.constants import (
     ROLE_TELLER,
 )
 from app.models import Account, Customer
-from app.services.customer_search_service import mask_account_number
+from app.services.customer_search_service import (
+    DEFAULT_SEARCH_LIMIT,
+    MAX_SEARCH_LIMIT,
+    mask_account_number,
+)
 from tests.auth_helpers import act_as
 
 
@@ -631,3 +635,68 @@ def test_search_performance_under_two_seconds(client, db):
         assert response.status_code == 200, f"Query '{query}' failed"
         assert duration < 2.0, f"Query '{query}' took {duration:.4f}s, expected < 2.0s"
         print(f"\n[PERFORMANCE] Query '{query}' ({label}) executed in {duration * 1000:.2f} ms")
+
+
+def test_search_custom_result_limit(client, populated_db):
+    act_as(ROLE_TELLER, user_id=1)
+    # Default without limit returns all 2 matching "Sharma"
+    res_all = client.get("/customers?q=Sharma")
+    assert res_all.status_code == 200
+    assert len(res_all.json()) == 2
+
+    # With limit=1, returns exactly 1 customer
+    res_limited = client.get("/customers?q=Sharma&limit=1")
+    assert res_limited.status_code == 200
+    data = res_limited.json()
+    assert len(data) == 1
+    assert data[0]["name"] == "Deepa Sharma"
+
+
+def test_search_default_result_limit_caps_broad_search(client, db):
+    act_as(ROLE_TELLER, user_id=1)
+    # Seed 55 customers with the same search term in their name
+    bulk_customers = [
+        Customer(
+            name=f"BulkSearch Customer {i:03d}",
+            date_of_birth=date(1995, 1, 1),
+            address="Test City",
+            phone=f"91000{i:05d}",
+            email=f"bulk{i}@test.com",
+            id_proof_number=f"ID-PROOF-BULK-{i:03d}",
+        )
+        for i in range(1, 56)
+    ]
+    db.add_all(bulk_customers)
+    db.commit()
+
+    # Search without specifying limit -> caps at DEFAULT_SEARCH_LIMIT (50)
+    response = client.get("/customers?q=BulkSearch")
+    assert response.status_code == 200
+    assert len(response.json()) == DEFAULT_SEARCH_LIMIT
+
+    # Explicit limit=15
+    res_15 = client.get("/customers?q=BulkSearch&limit=15")
+    assert res_15.status_code == 200
+    assert len(res_15.json()) == 15
+
+
+def test_search_result_limit_validation(client):
+    act_as(ROLE_TELLER, user_id=1)
+    # Limit < 1 is rejected with 400 VALIDATION_ERROR
+    res_zero = client.get("/customers?q=Sharma&limit=0")
+    assert res_zero.status_code == 400
+    assert res_zero.json()["code"] == "VALIDATION_ERROR"
+
+    res_negative = client.get("/customers?q=Sharma&limit=-5")
+    assert res_negative.status_code == 400
+    assert res_negative.json()["code"] == "VALIDATION_ERROR"
+
+    # Limit > 100 is rejected with 400 VALIDATION_ERROR
+    res_too_large = client.get("/customers?q=Sharma&limit=101")
+    assert res_too_large.status_code == 400
+    assert res_too_large.json()["code"] == "VALIDATION_ERROR"
+
+    # Non-integer limit is rejected with 400 VALIDATION_ERROR
+    res_invalid = client.get("/customers?q=Sharma&limit=abc")
+    assert res_invalid.status_code == 400
+    assert res_invalid.json()["code"] == "VALIDATION_ERROR"

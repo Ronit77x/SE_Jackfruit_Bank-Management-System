@@ -7,6 +7,8 @@ from app.errors import AppError
 from app.models import Account, Customer
 
 ALLOWED_PHONE_CHARS = set("0123456789 -+().")
+DEFAULT_SEARCH_LIMIT = 50
+MAX_SEARCH_LIMIT = 100
 
 
 def mask_account_number(number: str | None) -> str:
@@ -62,12 +64,15 @@ def get_relevant_accounts(customer: Customer, query: str) -> list[Account]:
     return list(customer.accounts)
 
 
-def search_customers(db: Session, query: str) -> list[Customer]:
+def search_customers(
+    db: Session, query: str, limit: int = DEFAULT_SEARCH_LIMIT
+) -> list[Customer]:
     """Search customers by name, phone number, or account number (BMS-F-014).
 
     - Name matching: case-insensitive partial match with escaped wildcards.
     - Phone matching: normalized exact match; rejects partial phone matching.
     - Account matching: exact match on account number using SQL EXISTS subquery.
+    - Result limit: caps results to prevent broad searches from returning excessive rows.
     - No-results response: returns generic 404 without echoing raw search query.
     """
     clean_q = (query or "").strip()
@@ -121,11 +126,14 @@ def search_customers(db: Session, query: str) -> list[Customer]:
     # 3. Account search: exact match via EXISTS subquery
     conditions.append(Customer.accounts.any(Account.account_number == clean_q))
 
+    effective_limit = min(max(1, limit), MAX_SEARCH_LIMIT) if limit is not None else DEFAULT_SEARCH_LIMIT
+
     stmt = (
         select(Customer)
         .where(or_(*conditions))
         .options(selectinload(Customer.accounts))
         .order_by(Customer.id.asc())
+        .limit(effective_limit)
     )
 
     customers = list(db.scalars(stmt).all())

@@ -1,6 +1,6 @@
 """Account and customer endpoints.
 
-Owner: Member 2 (Vijay). Stories: US-08, US-09, US-10, US-13.
+Owner: Member 2 (Vijay). Stories: US-08, US-09, US-10, US-12, US-13.
 """
 
 import re
@@ -22,13 +22,26 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.constants import ACCOUNT_CURRENT, ACCOUNT_SAVINGS, ROLE_CUSTOMER, ROLE_TELLER
+from app.constants import (
+    ACCOUNT_ACTIVE,
+    ACCOUNT_CLOSED,
+    ACCOUNT_CURRENT,
+    ACCOUNT_FROZEN,
+    ACCOUNT_SAVINGS,
+    ROLE_ADMIN,
+    ROLE_CUSTOMER,
+    ROLE_TELLER,
+)
 from app.database import get_db
 from app.deps import require_roles
 from app.errors import AppError
 from app.models import Account, User
 from app.security import mask_account_number
-from app.services.account_service import open_account, update_customer_details
+from app.services.account_service import (
+    open_account,
+    update_account_status,
+    update_customer_details,
+)
 from app.services.customer_search_service import (
     DEFAULT_SEARCH_LIMIT,
     get_relevant_accounts,
@@ -238,6 +251,143 @@ def update_customer_endpoint(
         teller_id=getattr(teller, "id", None),
     )
     return updated_customer
+
+
+# ---------------------------------------------------------------------------
+# US-12: Account Status Management (Freeze / Unfreeze / Close)
+# ---------------------------------------------------------------------------
+
+class AccountStatusUpdateRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    status: str | None = None
+    action: str | None = None
+
+    @field_validator("status", "action", mode="before")
+    @classmethod
+    def reject_explicit_null(cls, value: object, info: ValidationInfo) -> object:
+        if value is None:
+            raise ValueError(f"{info.field_name} cannot be null.")
+        return value
+
+    @model_validator(mode="after")
+    def resolve_target_status(self) -> "AccountStatusUpdateRequest":
+        if self.status is None and self.action is None:
+            raise ValueError("Either 'status' or 'action' must be provided.")
+
+        if self.status is not None and self.action is not None:
+            raise ValueError("Provide either 'status' or 'action', not both.")
+
+        raw = self.status if self.status is not None else self.action
+        if raw is None or not str(raw).strip():
+            raise ValueError("Status or action cannot be empty.")
+
+        cleaned = str(raw).strip().lower()
+        mapping = {
+            "freeze": ACCOUNT_FROZEN,
+            "frozen": ACCOUNT_FROZEN,
+            "unfreeze": ACCOUNT_ACTIVE,
+            "active": ACCOUNT_ACTIVE,
+            "activate": ACCOUNT_ACTIVE,
+            "close": ACCOUNT_CLOSED,
+            "closed": ACCOUNT_CLOSED,
+        }
+
+        if cleaned not in mapping:
+            raise ValueError(
+                f"Invalid status or action '{raw}'. Allowed: Active, Frozen, Closed (or freeze, unfreeze, close)."
+            )
+
+        self.status = mapping[cleaned]
+        return self
+
+
+class AccountStatusResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    account_number: str
+    status: str
+    balance: Decimal
+    type: str
+
+
+@router.patch(
+    "/accounts/{account_id}/status",
+    response_model=AccountStatusResponse,
+    status_code=status.HTTP_200_OK,
+)
+def update_account_status_endpoint(
+    account_id: str,
+    payload: AccountStatusUpdateRequest,
+    db: Annotated[Session, Depends(get_db)],
+    admin: Annotated[User, Depends(require_roles(ROLE_ADMIN))],
+):
+    """Freeze, unfreeze, or close an account (BMS-F-012). Admin only."""
+    account = update_account_status(
+        db=db,
+        account_identifier=account_id,
+        target_status=payload.status,
+        admin_id=getattr(admin, "id", None),
+    )
+    return account
+
+
+@router.post(
+    "/accounts/{account_id}/freeze",
+    response_model=AccountStatusResponse,
+    status_code=status.HTTP_200_OK,
+)
+def freeze_account_endpoint(
+    account_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    admin: Annotated[User, Depends(require_roles(ROLE_ADMIN))],
+):
+    """Freeze an active account (BMS-F-012). Admin only."""
+    return update_account_status(
+        db=db,
+        account_identifier=account_id,
+        target_status=ACCOUNT_FROZEN,
+        admin_id=getattr(admin, "id", None),
+    )
+
+
+@router.post(
+    "/accounts/{account_id}/unfreeze",
+    response_model=AccountStatusResponse,
+    status_code=status.HTTP_200_OK,
+)
+def unfreeze_account_endpoint(
+    account_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    admin: Annotated[User, Depends(require_roles(ROLE_ADMIN))],
+):
+    """Unfreeze a frozen account (BMS-F-012). Admin only."""
+    return update_account_status(
+        db=db,
+        account_identifier=account_id,
+        target_status=ACCOUNT_ACTIVE,
+        admin_id=getattr(admin, "id", None),
+    )
+
+
+@router.post(
+    "/accounts/{account_id}/close",
+    response_model=AccountStatusResponse,
+    status_code=status.HTTP_200_OK,
+)
+def close_account_endpoint(
+    account_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    admin: Annotated[User, Depends(require_roles(ROLE_ADMIN))],
+):
+    """Close an account with zero balance (BMS-F-012). Admin only."""
+    return update_account_status(
+        db=db,
+        account_identifier=account_id,
+        target_status=ACCOUNT_CLOSED,
+        admin_id=getattr(admin, "id", None),
+    )
 
 
 # ---------------------------------------------------------------------------

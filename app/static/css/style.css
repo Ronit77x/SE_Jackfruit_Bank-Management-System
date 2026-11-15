@@ -11,6 +11,7 @@
   --border: #d5dbe3;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
@@ -74,9 +75,13 @@ th { background: #eef2f7; }
 td.num, th.num { text-align: right; }
 .muted { color: var(--muted); }
 .row { display: grid; grid-template-columns: 1fr; gap: 0 1rem; }
+.field-row { display: flex; gap: 0.5rem; align-items: center; }
+.field-row input { flex: 1; }
+.field-row button.toggle-password { margin-top: 0; white-space: nowrap; padding: 0.6rem 0.9rem; width: auto; }
 @media (min-width: 640px) { .row.two { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 400px) {
   main { padding: 0.5rem; }
   button + button { margin-left: 0; display: block; width: 100%; }
   button { width: 100%; }
+  .field-row button.toggle-password { width: auto; }
 }

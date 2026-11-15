@@ -24,6 +24,7 @@
     role: function () { return sessionStorage.getItem(KEYS.role); },
     username: function () { return sessionStorage.getItem(KEYS.user); },
     mustChangePassword: function () { return sessionStorage.getItem(KEYS.must) === "true"; },
+    setMustChangePassword: function (value) { store(KEYS.must, String(value)); },
     isLoggedIn: function () { return !!sessionStorage.getItem(KEYS.token); },
 
     forget: function () { Object.keys(KEYS).forEach(function (k) { store(KEYS[k], null); }); },
@@ -114,6 +115,15 @@
       try { if (bms.token()) { await bms.request("POST", "/auth/logout"); } } catch (ignore) { /* leave anyway */ }
       bms.forget();
       window.location.href = "/ui/index.html";
+    },
+
+    changePassword: async function (currentPassword, newPassword) {
+      var result = await bms.post("/auth/change-password", {
+        currentPassword: currentPassword,
+        newPassword: newPassword
+      });
+      store(KEYS.must, "false");
+      return result;
     },
 
     // Call at the top of a page: sends the visitor to the login page unless a user with one of `roles` is logged in.

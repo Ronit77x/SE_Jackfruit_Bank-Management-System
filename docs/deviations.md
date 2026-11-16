@@ -37,7 +37,8 @@ video artifact links; this deviations log records delivery and scope decisions.
 ## Sprint 1 implementation and presentation deviations
 
 The original four entries were recorded on 22 October 2026; their current
-disposition below was reviewed on 16 November 2026.
+disposition below was reviewed on 16 November 2026. The resolved withdrawal-day
+entry additionally preserves the historical deviation and its correction.
 
 | ID | Story / baseline | Observed implementation or presentation | Reason and current disposition |
 |---|---|---|---|
@@ -45,6 +46,7 @@ disposition below was reviewed on 16 November 2026.
 | S1-02 | US-17/18/19; SAD §4.3 account identifiers | Deposit/withdrawal `accountId` and transfer `fromAccount`/`toAccount` are ten-digit account-number strings, not internal database IDs. | Clarifies the identifier used for transactions. Owned-account history separately supports internal IDs without changing these payloads. |
 | S1-03 | US-17/18/19; SAD §§4.3–4.4 error lists | Explicit outcomes include HTTP 404 `ACCOUNT_NOT_FOUND`, HTTP 400 `VALIDATION_ERROR`, and HTTP 400 `INVALID_TRANSFER` for same-account transfers. The standard response also contains a compatibility `detail` field. | Endpoint error lists were not exhaustive. The response retains `code`, `message`, `timestamp` and `traceId`, with understandable rejection messages and existing client compatibility. |
 | S1-04 | US-17/18/19; SAD §4.3 monetary responses | Monetary values are decimal strings such as `"1500.00"`, rather than binary floating-point JSON numbers. | Preserves exact paise in transport. This representation choice does not relax transaction integrity. |
+| S1-05 (resolved) | US-18; BR-02 daily withdrawal limit | The initial implementation counted daily withdrawals from UTC midnight rather than the bank's IST calendar-day boundary. | Corrected on **25 October 2026** in commit [`b31eb6d`](https://github.com/Ronit77x/SE_Jackfruit_Bank-Management-System/commit/b31eb6de13bcf21e1973ca23f59baeb0b63f7a18), included in [PR #43](https://github.com/Ronit77x/SE_Jackfruit_Bank-Management-System/pull/43), merged on 30 October 2026. IST midnight (UTC+05:30) is converted to UTC for the database query; dedicated IST-boundary regression tests verify BR-02 behavior. This historical deviation is resolved, not an outstanding limitation. |
 
 ## Sprint 2 acceptance deviations and verification limits
 
@@ -89,12 +91,15 @@ and Playwright Firefox/Gecko 153.0 at 360px. The Gecko viewport run is not a
 claim about the installed Firefox 159 desktop binary at a native 360px size.
 Viewport emulation does not establish physical touchscreen compatibility.
 
-The latest **two** releases of every browser were not verified: the recorded
-environment covers only available binaries/engine versions. Full BMS-NF-006
-version coverage remains **unverified**. A merged PR or closed issue does not
-change that evidence status. The original criterion remains unchanged; no
-unsupported `n-1` labels or blanket acceptance claim is made. See the
-[browser report](test-plan/TC-UX-02-browser-compatibility.md).
+PR #61 completes and integrates the US-15 implementation. Closure of issue #13
+records that implementation completion. Latest-two-browser-version coverage
+and physical touchscreen testing are separate outstanding verification
+activities, retained in the [browser report](test-plan/TC-UX-02-browser-compatibility.md).
+The recorded environment covers only available binaries/engine versions, so
+full BMS-NF-006 version coverage remains **unverified**. The original criterion
+is unchanged; no unsupported `n-1` labels or blanket acceptance claim is made.
+This clarification does not request reopening #13 or changing its completed
+implementation.
 
 ### S2-03 — Monthly availability is not demonstrated
 
@@ -158,10 +163,10 @@ and monthly availability are outside this evidence.
 - If the team closes #12 because no further recruitment is planned, use
   **Not planned**, explain the implemented functionality and unmet acceptance,
   and link this record after review. Do not mark all criteria passed.
-- For #13, latest-two-version acceptance is unverified even if it was already
-  closed. Clarify its closure; retain/reopen the issue for unmet acceptance.
-  If further matrix work is deliberately dropped, close that remaining work
-  as Not planned with the limitation linked after review.
+- Issue #13 may remain closed for the implementation integrated through #61.
+  Latest-two-browser-version and physical touchscreen verification remain
+  outstanding in the browser report and this record; implementation closure
+  does not claim those activities passed. No reopening is requested here.
 - Issue #23's monthly target and #36's final release are not completed by this
   document. Keep their outstanding criteria visible.
 - PR #45 requires normal team review. Approval acknowledges accurate reporting,

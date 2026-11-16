@@ -5,8 +5,8 @@ Updated: **16 November 2026**. Evidence baseline: main
 
 This record distinguishes implementation choices, late deliverables and unmet
 or incompletely verified acceptance criteria. Recording a limitation does not
-change the submitted SRS or establish that an assessor has waived it. This is
-a submission-status record, not a claim that release or recording is complete.
+change the submitted SRS or establish that an assessor has waived it. Recording
+dates and video artifact links are maintained in the release documentation.
 
 ## Delivery timeline deviation (both sprints)
 
@@ -17,9 +17,9 @@ assignment deadline.
 
 Integration, corrective reviews, verification and demonstration preparation
 continued during **14–16 November 2026**, beyond the planned windows. Sprint 1
-demonstration evidence is committed through PR #74. Sprint 2 recording remains
-pending: **Vaibhava L. (Member 4)** records it, and Ronit handles repository
-publication and merges.
+demonstration evidence is committed through PR #74. The Sprint 2 recording
+owner is **Vaibhava L. (Member 4)**; Ronit handles repository publication and
+merges.
 
 The delivery overrun occurred while dependent branches were integrated, review
 findings were resolved, and shared authentication, role-specific UI and
@@ -30,10 +30,9 @@ demonstrating the integrated application. This explains the observed work and
 delay without blaming an individual or inventing an external event. Late
 delivery remains a schedule deviation.
 
-Remaining delivery actions are the Sprint 2 recording/publication and final
-documentation/release review in PR #68 (US-07, issue #36). Merging this record
-does not complete the demo. Its actual date and published link must be added
-to the release documentation afterward.
+Final documentation/release review is tracked in PR #68 (US-07, issue #36).
+Use the release documentation for actual demonstration dates and published
+video artifact links; this deviations log records delivery and scope decisions.
 
 ## Sprint 1 implementation and presentation deviations
 
@@ -167,5 +166,5 @@ and monthly availability are outside this evidence.
   document. Keep their outstanding criteria visible.
 - PR #45 requires normal team review. Approval acknowledges accurate reporting,
   not an external waiver of SRS acceptance criteria.
-- Sprint 2 recording/publication remains pending. Final release notes must
-  link this record and the actual videos, retaining unresolved limitations.
+- Final release notes link this record and the actual video artifacts and
+  dates, retaining unresolved verification limitations.

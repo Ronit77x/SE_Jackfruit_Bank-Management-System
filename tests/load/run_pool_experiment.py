@@ -65,7 +65,8 @@ def run(output, port, baseline_ref, configurations, repeats):
             env.update(BMS_DATABASE_URL=f"sqlite:///{(folder / 'benchmark.db').as_posix()}",
                        BMS_DATA_KEY=Fernet.generate_key().decode(), BMS_DB_POOL_SIZE=str(size),
                        BMS_DB_MAX_OVERFLOW=str(overflow),
-                       BMS_LOAD_LOGIN_COUNTS=str(folder / "logins.json"), PYTHONIOENCODING="utf-8")
+                       BMS_LOAD_LOGIN_COUNTS=str(folder / "logins.json"),
+                       BMS_LOAD_FINAL_CSV=str(folder / "final"), PYTHONIOENCODING="utf-8")
             print(f"START {name}", flush=True)
             with (folder / "seed.log").open("w", encoding="utf-8") as log:
                 subprocess.run([sys.executable, "-B", "-m", "scripts.seed"], cwd=source,
@@ -105,11 +106,13 @@ def run(output, port, baseline_ref, configurations, repeats):
                     server.terminate()
                     server.wait(timeout=20)
             counts = json.loads((folder / "logins.json").read_text())
-            with (folder / "load_stats.csv").open(newline="", encoding="utf-8") as stream:
+            with (folder / "final_stats.csv").open(newline="", encoding="utf-8") as stream:
                 stats = next(row for row in csv.DictReader(stream) if row["Name"] == "Aggregated")
             row = {"run": name, "configuration": actual, "logins": counts,
                    "locust_exit_code": result.returncode, "elapsed_seconds": elapsed, "statistics": stats,
-                   "queuepool_timeouts": (folder / "server.log").read_text().count("sqlalchemy.exc.TimeoutError")}
+                   "queuepool_timeouts": (folder / "server.log").read_text().count("sqlalchemy.exc.TimeoutError"),
+                   "statistics_file": "final_stats.csv",
+                   "statistics_capture": "Locust quit event after all users stop; periodic CSV retained separately"}
             manifest["runs"].append(row)
             (output / "results.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
             print(f"DONE {name}: requests={stats['Request Count']} failures={stats['Failure Count']} p95={stats['95%']}ms logins={counts}", flush=True)

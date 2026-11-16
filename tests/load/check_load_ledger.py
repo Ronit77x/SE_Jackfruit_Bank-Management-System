@@ -1,7 +1,7 @@
 """Read-only reconciliation of a fresh seeded R3 benchmark against Locust counts.
 
 Usage: python tests/load/check_load_ledger.py --run <external-output>/R3-1
-The run folder must contain benchmark.db and load_stats.csv from the runner.
+The run folder must contain benchmark.db and final_stats.csv from the runner.
 """
 import argparse
 from collections import Counter, defaultdict
@@ -13,7 +13,7 @@ import sqlite3
 
 
 def reconcile(folder):
-    with (folder / "load_stats.csv").open(newline="", encoding="utf-8") as stream:
+    with (folder / "final_stats.csv").open(newline="", encoding="utf-8") as stream:
         stats = {row["Name"]: row for row in csv.DictReader(stream)}
     counts = {}
     for endpoint, action in (("deposit", "DEPOSIT"), ("withdraw", "WITHDRAWAL"), ("transfer", "TRANSFER")):

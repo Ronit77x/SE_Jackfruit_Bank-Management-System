@@ -382,4 +382,3 @@ def get_customer_accounts(db: Session, customer_id: int) -> list[Account]:
             .order_by(Account.id.asc())
         ).all()
     )
-

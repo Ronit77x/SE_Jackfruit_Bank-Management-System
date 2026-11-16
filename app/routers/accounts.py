@@ -522,4 +522,3 @@ def get_transfer_ui():
         content="<h1>Transfer UI not found</h1>",
         status_code=status.HTTP_404_NOT_FOUND,
     )
-

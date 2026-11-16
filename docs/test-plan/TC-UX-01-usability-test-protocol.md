@@ -31,22 +31,65 @@ Verify that the customer-facing fund transfer interface is intuitive, transparen
 
 - **Platform:** Web browser (Chrome, Edge, or Firefox) at desktop or mobile resolution ($\ge 360\text{ px}$).
 - **URL:** `http://127.0.0.1:8000/ui/transfer.html` (or `http://127.0.0.1:8000/transfer`)
-- **Test Environment Preparation:**
-  1. Initialize fresh seed data:
+- **Isolated Participant Database Procedure:**
+  > [!NOTE]
+  > Rerunning `python -m scripts.seed` on an existing database is idempotent: it preserves existing customer accounts and **does not reset modified account balances**. To guarantee that each participant begins with the exact documented fresh starting balances, each trial session must be provisioned with its own separate, fresh SQLite database file. Never alter or delete the shared development database (`bms.db`).
+
+  1. **Clean Stale Participant Database (If Needed):**
+     If the participant-specific database file already exists from an interrupted or prior trial run, delete only that exact participant database file before provisioning. Never touch `bms.db`.
+     - PowerShell:
+       ```powershell
+       Remove-Item ./bms_p1.db -ErrorAction SilentlyContinue
+       ```
+     - Bash / POSIX:
+       ```bash
+       rm -f ./bms_p1.db
+       ```
+
+  2. **Generate and Export Encryption Key:**
+     Generate a valid 32-byte Fernet key once per participant session and keep the identical key active in the terminal session for both database seeding and application runtime:
+     - Key Generation:
+       ```bash
+       python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+       ```
+     - PowerShell:
+       ```powershell
+       $env:BMS_DATABASE_URL = "sqlite:///./bms_p1.db"
+       $env:BMS_DATA_KEY = "<generated_key>"
+       ```
+     - Bash / POSIX:
+       ```bash
+       export BMS_DATABASE_URL="sqlite:///./bms_p1.db"
+       export BMS_DATA_KEY="<generated_key>"
+       ```
+
+  3. **Initialize Schema & Fresh Seed Data:**
+     Execute the project seed script against the fresh participant database (creates schema tables and demo accounts):
      ```powershell
      python -m scripts.seed
      ```
-  2. Launch development server:
+
+  4. **Pre-Flight Verification of Starting Balances:**
+     Confirm the participant database is fresh before seating the user:
      ```powershell
-     uvicorn app.main:app --reload
+     python -c "from app.database import SessionLocal; from app.models import Account; s=SessionLocal(); a1=s.query(Account).filter_by(account_number='1000000001').first(); a3=s.query(Account).filter_by(account_number='1000000003').first(); print(f'1000000001: {a1.balance}, 1000000003: {a3.balance}'); assert a1.balance == 10000 and a3.balance == 20000, 'Not fresh!'; s.close()"
      ```
-  3. Ensure network accessibility and open `http://127.0.0.1:8000/ui/transfer.html`.
+
+  5. **Launch Application Server:**
+     Start the server in the configured environment (inheriting `BMS_DATABASE_URL` and `BMS_DATA_KEY`):
+     ```powershell
+     uvicorn app.main:app --port 8000
+     ```
+
+  6. **Participant Isolation:**
+     For subsequent participants (P2 through P5), repeat the procedure using a unique database file for each user (`bms_p2.db`, `bms_p3.db`, etc.). A participant's transfer actions can never alter or contaminate another participant's test dataset.
+
 - **Test Dataset & Account State:**
   - Participant logs in as Customer 1 (**Asha Rao**, username `1`, demo password `Passw0rd!`).
   - Active source account: Savings Account `1000000001` (Balance: ₹10,000.00, Status: Active).
   - Secondary source account: Current Account `1000000002` (Balance: ₹25,000.00, Status: Active).
   - Source-account selector behavior: Only Active accounts remain enabled. Inactive, Frozen, or Closed accounts are disabled with descriptive status tags.
-  - Target destination account: Customer 2 (**Ravi Kumar**, Account `1000000003`).
+  - Target destination account: Customer 2 (**Ravi Kumar**, Account `1000000003`) (Savings starting balance: ₹20,000.00).
 
 ---
 

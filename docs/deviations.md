@@ -10,10 +10,12 @@ dates and video artifact links are maintained in the release documentation.
 
 ## Delivery timeline deviation (both sprints)
 
-The project-board windows supplied by the team were **19–25 October 2026 for
-Sprint 1** and **26 October–1 November 2026 for Sprint 2**. Some issue bodies use
-narrower working-week dates; these dates refer to the board, not a revised
-assignment deadline.
+The assignment's Part-2 deliverables specify **19–23 October 2026 for Sprint 1**
+and **26–30 October 2026 for Sprint 2**. The project-board windows supplied by
+the team were wider: 19–25 October and 26 October–1 November. Those board
+windows do not revise or extend the assignment dates. Both planning records
+are distinguished here so the overrun is measured against the submitted
+assignment rather than silently replacing its deadlines.
 
 Integration, corrective reviews, verification and demonstration preparation
 continued during **14–16 November 2026**, beyond the planned windows. Sprint 1
@@ -33,6 +35,9 @@ delivery remains a schedule deviation.
 Final documentation/release review is tracked in PR #68 (US-07, issue #36).
 Use the release documentation for actual demonstration dates and published
 video artifact links; this deviations log records delivery and scope decisions.
+The Part-2 assignment also requires deviations to be documented and explained
+during the final demo. Reference the relevant entries in that explanation;
+concise on-screen text can communicate the limitations in a silent recording.
 
 ## Sprint 1 implementation and presentation deviations
 

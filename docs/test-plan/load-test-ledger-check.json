@@ -1,0 +1,32 @@
+{
+  "accounts_reconciled": 10,
+  "all_account_balances_match_seed_plus_ledger": true,
+  "append_only_triggers_installed": [
+    "audit_logs_append_only_delete",
+    "audit_logs_append_only_update"
+  ],
+  "every_intermediate_balance_matches_ledger": true,
+  "final_total_balance": "325898",
+  "foreign_key_violations": 0,
+  "initial_total_balance": "325000",
+  "note": "Read-only inspection of disposable benchmark data; transfers have two ledger rows per request.",
+  "notification_contents_and_customers_match_transactions": true,
+  "notification_count_matches_transaction_rows": true,
+  "notification_rows": 12882,
+  "source_commit": "2a29889703e839f015c3152e7844f7d1509026f7",
+  "sqlite_integrity_check": "ok",
+  "successful_audit_counts": {
+    "DEPOSIT": 2577,
+    "LOGIN": 50,
+    "TRANSFER": 4313,
+    "WITHDRAWAL": 1679
+  },
+  "transaction_counts": {
+    "Deposit": 2577,
+    "TransferIn": 4313,
+    "TransferOut": 4313,
+    "Withdrawal": 1679
+  },
+  "transaction_rows": 12882,
+  "transfer_pairs_reconciled": 4313
+}

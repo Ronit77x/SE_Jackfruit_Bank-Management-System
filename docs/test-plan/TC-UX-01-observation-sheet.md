@@ -18,9 +18,14 @@
 
 Before each participant session:
 
-- [ ] Confirm isolated environment: `$env:BMS_DATABASE_URL` points to an isolated SQLite test database.
-- [ ] Reset database: execute `python -m scripts.seed`, and restart server.
-- [ ] Confirm starting balances: Source `1000000001` = ₹10,000.00; Destination `1000000003` = ₹5,000.00.
+- [ ] Clean stale participant file: If `bms_p<ID>.db` already exists from an aborted or previous trial, remove only that exact participant database file (`Remove-Item ./bms_p<ID>.db` or `rm -f ./bms_p<ID>.db`). Never delete or modify the shared development database `bms.db`.
+- [ ] Configure isolated database: Set `$env:BMS_DATABASE_URL = "sqlite:///./bms_p<ID>.db"` (PowerShell) or `export BMS_DATABASE_URL="sqlite:///./bms_p<ID>.db"` (Bash) for a dedicated, unique participant file.
+- [ ] Configure encryption key: Generate a valid Fernet key (`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`) and export `$env:BMS_DATA_KEY = "<generated_key>"` (PowerShell) or `export BMS_DATA_KEY="<generated_key>"` (Bash). Keep this identical key in the terminal session for both seeding and application runtime.
+- [ ] Initialize schema and fresh seed data: Execute `python -m scripts.seed` against the fresh participant database. (Note: Rerunning seed on an existing populated database does not reset modified balances, so a fresh database file must be used per participant).
+- [ ] Pre-flight balance verification: Query `Account` table to verify fresh starting balances before inviting the participant:
+  - Source `1000000001` (Asha Rao, Savings): ₹10,000.00
+  - Destination `1000000003` (Ravi Kumar, Savings): ₹20,000.00
+- [ ] Launch application server: Run `uvicorn app.main:app --port 8000` in the configured environment.
 - [ ] Open fresh incognito/private browser tab at `http://127.0.0.1:8000/ui/transfer.html` (or `http://127.0.0.1:8000/transfer`).
 - [ ] Authenticate as Customer 1 (Username: `1`, Password: `Passw0rd!`).
 - [ ] Verify stopwatch is ready.
@@ -40,7 +45,7 @@ After each session:
 - [ ] Record exact elapsed seconds, accurate details, and whether assistance was requested/given.
 - [ ] Interview participant for brief subjective feedback and note any points of confusion.
 - [ ] Close the browser tab.
-- [ ] Execute the reset procedure before inviting the next participant.
+- [ ] Repeat setup with a new database file (e.g. `bms_p2.db`) before inviting the next participant.
 
 ---
 

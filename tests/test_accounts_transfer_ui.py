@@ -232,8 +232,9 @@ def test_transfer_ui_served_at_ui_static_route_with_expected_assets(client):
     assert "text/html" in response.headers.get("content-type", "")
 
     html = response.text
-    # Canonical page content check
-    assert html == STATIC_TRANSFER_HTML.read_text(encoding="utf-8")
+    # Canonical page content check: byte-for-byte exact match of static file bytes served
+    assert response.content == STATIC_TRANSFER_HTML.read_bytes()
+    assert html.replace("\r\n", "\n") == STATIC_TRANSFER_HTML.read_text(encoding="utf-8")
     assert "Transfer Money" in html
     assert "fromAccountSelect" in html
     assert "toAccountInput" in html
@@ -267,7 +268,7 @@ def test_transfer_and_alias_endpoints_serve_canonical_page_when_present(client):
     res_transfer = client.get("/transfer")
     assert res_transfer.status_code == 200
     assert "text/html" in res_transfer.headers.get("content-type", "")
-    assert res_transfer.text == expected_canonical_content
+    assert res_transfer.text.replace("\r\n", "\n") == expected_canonical_content
     assert "/ui/css/transfer.css" in res_transfer.text
     assert "/ui/js/transfer.js" in res_transfer.text
 
@@ -275,10 +276,10 @@ def test_transfer_and_alias_endpoints_serve_canonical_page_when_present(client):
     res_alias = client.get("/transfer-ui")
     assert res_alias.status_code == 200
     assert "text/html" in res_alias.headers.get("content-type", "")
-    assert res_alias.text == expected_canonical_content
+    assert res_alias.text.replace("\r\n", "\n") == expected_canonical_content
 
     # Confirms it is serving the canonical page, distinct from the legacy file
-    assert res_transfer.text != FRONTEND_TRANSFER_HTML.read_text(encoding="utf-8")
+    assert res_transfer.text.replace("\r\n", "\n") != FRONTEND_TRANSFER_HTML.read_text(encoding="utf-8")
 
 
 def test_transfer_endpoints_fallback_to_legacy_frontend_only_when_canonical_absent(client, monkeypatch):
@@ -298,12 +299,12 @@ def test_transfer_endpoints_fallback_to_legacy_frontend_only_when_canonical_abse
     res_transfer = client.get("/transfer")
     assert res_transfer.status_code == 200
     assert "text/html" in res_transfer.headers.get("content-type", "")
-    assert res_transfer.text == expected_legacy_content
+    assert res_transfer.text.replace("\r\n", "\n") == expected_legacy_content
 
     # Fallback works on /transfer-ui
     res_alias = client.get("/transfer-ui")
     assert res_alias.status_code == 200
-    assert res_alias.text == expected_legacy_content
+    assert res_alias.text.replace("\r\n", "\n") == expected_legacy_content
 
 
 # ==================== D. DEFENSIVE & EDGE CASE TESTS ====================

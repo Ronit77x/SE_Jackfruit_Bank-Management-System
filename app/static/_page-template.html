@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<!-- Copy this file to start a new page. Replace PAGE TITLE, the role list and the script body.
+     Rules: build page content with bms.el(...) / textContent only (never the HTML-insertion APIs); account numbers are the
+     10-digit number; show errors with bms.show(element, error.message, false). -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bank Management System - PAGE TITLE</title>
+  <link rel="stylesheet" href="/ui/css/style.css">
+</head>
+<body>
+  <header id="site-header" class="site"></header>
+  <main>
+    <section class="card">
+      <h2>PAGE TITLE</h2>
+      <form id="example-form" autocomplete="off">
+        <label for="field">Field</label>
+        <input id="field" name="field" required>
+        <button type="submit">Send</button>
+      </form>
+      <div id="example-message" class="message" role="alert"></div>
+    </section>
+  </main>
+  <script src="/ui/js/api.js"></script>
+  <script>
+    (function () {
+      if (!bms.requireRole(["Teller"])) { return; }      // allowed roles for this page
+      bms.header("PAGE TITLE");
+      var form = document.getElementById("example-form");
+      var message = document.getElementById("example-message");
+      form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        bms.hide(message);
+        try {
+          var result = await bms.post("/some/endpoint", { field: form.field.value });
+          bms.show(message, "Done: " + JSON.stringify(result), true);
+        } catch (error) {
+          bms.show(message, error.message, false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

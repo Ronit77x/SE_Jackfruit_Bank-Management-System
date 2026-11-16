@@ -222,14 +222,18 @@ def test_user_with_temporary_password_cannot_access_accounts(client, sample_data
 
 # ==================== C. WEB UI SERVING ====================
 
-def test_transfer_ui_served_at_transfer_endpoint(client):
-    """GET /transfer serves the HTML/CSS/JS customer transfer interface."""
-    response = client.get("/transfer")
+def test_transfer_ui_served_at_ui_static_route_with_expected_assets(client):
+    """GET /ui/transfer.html serves the new canonical page and loads expected CSS and JS assets."""
+    from app.routers.accounts import STATIC_TRANSFER_HTML
+    assert STATIC_TRANSFER_HTML.exists(), "Canonical app/static/transfer.html must exist"
+
+    response = client.get("/ui/transfer.html")
     assert response.status_code == 200
     assert "text/html" in response.headers.get("content-type", "")
 
-    # Check key UI structure elements
     html = response.text
+    # Canonical page content check
+    assert html == STATIC_TRANSFER_HTML.read_text(encoding="utf-8")
     assert "Transfer Money" in html
     assert "fromAccountSelect" in html
     assert "toAccountInput" in html
@@ -238,13 +242,68 @@ def test_transfer_ui_served_at_transfer_endpoint(client):
     assert "btnConfirmSend" in html
     assert "executeTransfer" in html
 
+    # Verify expected asset references exist in the canonical HTML
+    assert '<link rel="stylesheet" href="/ui/css/style.css">' in html
+    assert '<link rel="stylesheet" href="/ui/css/transfer.css">' in html
+    assert '<script src="/ui/js/api.js"></script>' in html
+    assert '<script src="/ui/js/transfer.js"></script>' in html
 
-def test_transfer_ui_served_at_alias_route(client):
-    """GET /transfer-ui serves the same interface."""
-    response = client.get("/transfer-ui")
-    assert response.status_code == 200
-    assert "text/html" in response.headers.get("content-type", "")
-    assert "Transfer Money" in response.text
+    # Verify that all referenced CSS and JS assets are successfully served
+    assert client.get("/ui/css/style.css").status_code == 200
+    assert client.get("/ui/css/transfer.css").status_code == 200
+    assert client.get("/ui/js/api.js").status_code == 200
+    assert client.get("/ui/js/transfer.js").status_code == 200
+
+
+def test_transfer_and_alias_endpoints_serve_canonical_page_when_present(client):
+    """GET /transfer and /transfer-ui serve the canonical static page when it exists."""
+    from app.routers.accounts import FRONTEND_TRANSFER_HTML, STATIC_TRANSFER_HTML
+    assert STATIC_TRANSFER_HTML.exists()
+    assert FRONTEND_TRANSFER_HTML.exists()
+
+    expected_canonical_content = STATIC_TRANSFER_HTML.read_text(encoding="utf-8")
+
+    # 1. Primary route: GET /transfer
+    res_transfer = client.get("/transfer")
+    assert res_transfer.status_code == 200
+    assert "text/html" in res_transfer.headers.get("content-type", "")
+    assert res_transfer.text == expected_canonical_content
+    assert "/ui/css/transfer.css" in res_transfer.text
+    assert "/ui/js/transfer.js" in res_transfer.text
+
+    # 2. Alias route: GET /transfer-ui
+    res_alias = client.get("/transfer-ui")
+    assert res_alias.status_code == 200
+    assert "text/html" in res_alias.headers.get("content-type", "")
+    assert res_alias.text == expected_canonical_content
+
+    # Confirms it is serving the canonical page, distinct from the legacy file
+    assert res_transfer.text != FRONTEND_TRANSFER_HTML.read_text(encoding="utf-8")
+
+
+def test_transfer_endpoints_fallback_to_legacy_frontend_only_when_canonical_absent(client, monkeypatch):
+    """GET /transfer and /transfer-ui fall back to frontend/transfer.html ONLY when canonical page is absent."""
+    from app.routers.accounts import FRONTEND_TRANSFER_HTML
+    assert FRONTEND_TRANSFER_HTML.exists(), "Legacy frontend/transfer.html fallback must exist"
+
+    # Simulate canonical static file being absent
+    monkeypatch.setattr(
+        "app.routers.accounts.STATIC_TRANSFER_HTML",
+        Path("non_existent_canonical_transfer.html"),
+    )
+
+    expected_legacy_content = FRONTEND_TRANSFER_HTML.read_text(encoding="utf-8")
+
+    # Fallback works on /transfer
+    res_transfer = client.get("/transfer")
+    assert res_transfer.status_code == 200
+    assert "text/html" in res_transfer.headers.get("content-type", "")
+    assert res_transfer.text == expected_legacy_content
+
+    # Fallback works on /transfer-ui
+    res_alias = client.get("/transfer-ui")
+    assert res_alias.status_code == 200
+    assert res_alias.text == expected_legacy_content
 
 
 # ==================== D. DEFENSIVE & EDGE CASE TESTS ====================
@@ -326,15 +385,23 @@ def test_customer_accounts_with_frozen_and_closed_status(client, db, sample_data
     assert statuses["1000000099"] == ACCOUNT_CLOSED
 
 
-def test_transfer_ui_fallback_if_file_missing(client, monkeypatch):
-    """If transfer.html is missing, endpoint returns 404 cleanly instead of crashing."""
+def test_transfer_ui_fallback_if_both_files_missing(client, monkeypatch):
+    """If both canonical and legacy transfer.html are missing, endpoint returns 404 cleanly instead of crashing."""
     monkeypatch.setattr(
         "app.routers.accounts.FRONTEND_TRANSFER_HTML",
         Path("non_existent_path_to_transfer.html"),
     )
-    response = client.get("/transfer")
-    assert response.status_code == 404
-    assert "Transfer UI not found" in response.text
+    monkeypatch.setattr(
+        "app.routers.accounts.STATIC_TRANSFER_HTML",
+        Path("non_existent_path_to_transfer.html"),
+    )
+    res_transfer = client.get("/transfer")
+    assert res_transfer.status_code == 404
+    assert "Transfer UI not found" in res_transfer.text
+
+    res_alias = client.get("/transfer-ui")
+    assert res_alias.status_code == 404
+    assert "Transfer UI not found" in res_alias.text
 
 
 # ==================== E. LOGOUT & TC-UX-01 ALIGNMENT TESTS ====================
@@ -446,6 +513,26 @@ def test_transfer_ui_contract_excludes_ineligible_source_accounts():
     assert 'Selected account is ${acc.status || "unavailable"} and cannot perform transfers.' in content
 
 
+def test_canonical_transfer_ui_contract_excludes_ineligible_source_accounts():
+    """Canonical app/static/transfer.html and transfer.js must exclude and disable non-active accounts."""
+    from app.routers.accounts import STATIC_TRANSFER_HTML
+    assert STATIC_TRANSFER_HTML.exists()
+
+    static_dir = STATIC_TRANSFER_HTML.parent
+    transfer_js_path = static_dir / "js" / "transfer.js"
+    assert transfer_js_path.exists()
+    js_content = transfer_js_path.read_text(encoding="utf-8")
+
+    assert "function isEligibleStatus(status)" in js_content
+    assert 'status.trim().toLowerCase() === "active"' in js_content
+    assert "eligibleAccounts" in js_content
+    assert "ineligibleAccounts" in js_content
+    assert "No eligible active accounts available" in js_content
+    assert "Excluded unavailable accounts:" in js_content
+    assert "No accounts can be used for transfers right now." in js_content
+    assert "opt.disabled = true" in js_content
+
+
 def test_backend_transfer_validation_rejects_frozen_source_account(client, db, sample_data):
     """Backend must reject transfer attempts from a Frozen source account with 409."""
     a1 = sample_data["a1"]
@@ -550,12 +637,23 @@ def test_backend_transfer_validation_enforces_business_rules_independent_of_fron
     assert res_same.status_code == 400
     assert res_same.json()["code"] == "INVALID_TRANSFER"
 
-    # 3. Exceeds transfer limit (limit is 50,000) -> 422 TRANSFER_LIMIT_EXCEEDED
+    # 3. Exceeds transfer limit (configured limit is 100,000.00) -> 422 TRANSFER_LIMIT_EXCEEDED
+    # Fund source account with 200,000.00 so balance is completely sufficient (leaves 50,000 >= 1,000 min balance).
+    # This guarantees that INSUFFICIENT_FUNDS cannot cause this test to pass accidentally.
+    a1.balance = Decimal("200000.00")
+    db.commit()
+
     res_limit = client.post(
         "/transactions/transfer",
-        json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "60000.00"},
+        json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "150000.00"},
     )
     assert res_limit.status_code == 422
+    assert res_limit.json()["code"] == "TRANSFER_LIMIT_EXCEEDED"
+    assert "Transfer limit of 100000 exceeded" in res_limit.json()["message"]
+
+    # Restore a1 balance to 10,000.00 to keep subsequent minimum-balance tests isolated
+    a1.balance = Decimal("10000.00")
+    db.commit()
 
     # 4. Violates minimum balance (Savings requires 1,000 min balance; a1 has 10,000; transferring 9,500 leaves 500)
     res_min_bal = client.post(
@@ -625,6 +723,15 @@ def test_backend_transfer_validation_enforces_auth_roles_and_input_rules(client,
         json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "-100.00"},
     )
     assert res_negative.status_code == 400
+
+    # 6. More than 2 decimal places -> 400 VALIDATION_ERROR (Pydantic decimal_places constraint)
+    res_precision = client.post(
+        "/transactions/transfer",
+        json={"fromAccount": a1.account_number, "toAccount": a3.account_number, "amount": "500.999"},
+    )
+    assert res_precision.status_code == 400
+    assert res_precision.json()["code"] == "VALIDATION_ERROR"
+    assert "decimal" in res_precision.json()["message"]
 
     # Ensure balances remain completely unchanged
     db.refresh(a1)

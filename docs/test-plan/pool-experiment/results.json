@@ -1,0 +1,495 @@
+{
+  "source_commit": "474371310d21e44e185321f05553c53a6187f02d",
+  "baseline_commit": "380edd9037f3d1b61a018978c552a56739664b22",
+  "baseline_database_sha256": "45eaa0ca341d0814ed69932d82ea0cf0643df86a4fb56c2ab2dd821bc7f66fc7",
+  "updated_database_sha256": "6ae35883d8bb204c0e007783485db70acd5a0b73bf4e9b26d147f96dae45115f",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "logical_cpus": 32,
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "users": 50,
+  "spawn_rate": 10,
+  "duration_seconds": 120,
+  "runs": [
+    {
+      "run": "R0-1",
+      "configuration": {
+        "journal_mode": "delete",
+        "busy_timeout": 5000,
+        "pool_size": 5,
+        "max_overflow": 10
+      },
+      "logins": {
+        "successful": 50,
+        "failed": 0
+      },
+      "locust_exit_code": 0,
+      "elapsed_seconds": 121.71,
+      "statistics": {
+        "Type": "",
+        "Name": "Aggregated",
+        "Request Count": "5159",
+        "Failure Count": "0",
+        "Median Response Time": "190",
+        "Average Response Time": "345.62468255477205",
+        "Min Response Time": "16.22510000015609",
+        "Max Response Time": "3963.935300002049",
+        "Average Content Size": "83.59410738515216",
+        "Requests/s": "43.913019953797274",
+        "Failures/s": "0.0",
+        "50%": "190",
+        "66%": "250",
+        "75%": "300",
+        "80%": "380",
+        "90%": "910",
+        "95%": "1300",
+        "98%": "1900",
+        "99%": "2400",
+        "99.9%": "3100",
+        "99.99%": "4000",
+        "100%": "4000"
+      },
+      "queuepool_timeouts": 0
+    },
+    {
+      "run": "R1-1",
+      "configuration": {
+        "journal_mode": "wal",
+        "busy_timeout": 30000,
+        "pool_size": 40,
+        "max_overflow": 10
+      },
+      "logins": {
+        "successful": 50,
+        "failed": 0
+      },
+      "locust_exit_code": 0,
+      "elapsed_seconds": 121.1,
+      "statistics": {
+        "Type": "",
+        "Name": "Aggregated",
+        "Request Count": "7477",
+        "Failure Count": "0",
+        "Median Response Time": "30",
+        "Average Response Time": "71.42329553288293",
+        "Min Response Time": "8.960999999544583",
+        "Max Response Time": "3785.616699999082",
+        "Average Content Size": "83.59087869466363",
+        "Requests/s": "62.86008644281104",
+        "Failures/s": "0.0",
+        "50%": "30",
+        "66%": "43",
+        "75%": "58",
+        "80%": "77",
+        "90%": "250",
+        "95%": "310",
+        "98%": "350",
+        "99%": "370",
+        "99.9%": "440",
+        "99.99%": "3800",
+        "100%": "3800"
+      },
+      "queuepool_timeouts": 0
+    },
+    {
+      "run": "R2-1",
+      "configuration": {
+        "journal_mode": "wal",
+        "busy_timeout": 30000,
+        "pool_size": 50,
+        "max_overflow": 50
+      },
+      "logins": {
+        "successful": 50,
+        "failed": 0
+      },
+      "locust_exit_code": 0,
+      "elapsed_seconds": 121.03,
+      "statistics": {
+        "Type": "",
+        "Name": "Aggregated",
+        "Request Count": "8599",
+        "Failure Count": "0",
+        "Median Response Time": "23",
+        "Average Response Time": "27.370485475064598",
+        "Min Response Time": "8.948100003181025",
+        "Max Response Time": "679.2423000006238",
+        "Average Content Size": "83.67065937899756",
+        "Requests/s": "72.4049327865593",
+        "Failures/s": "0.0",
+        "50%": "23",
+        "66%": "30",
+        "75%": "35",
+        "80%": "38",
+        "90%": "49",
+        "95%": "59",
+        "98%": "71",
+        "99%": "78",
+        "99.9%": "140",
+        "99.99%": "680",
+        "100%": "680"
+      },
+      "queuepool_timeouts": 0
+    },
+    {
+      "run": "R3-1",
+      "configuration": {
+        "journal_mode": "wal",
+        "busy_timeout": 30000,
+        "pool_size": 5,
+        "max_overflow": 10
+      },
+      "logins": {
+        "successful": 50,
+        "failed": 0
+      },
+      "locust_exit_code": 0,
+      "elapsed_seconds": 121.11,
+      "statistics": {
+        "Type": "",
+        "Name": "Aggregated",
+        "Request Count": "8567",
+        "Failure Count": "0",
+        "Median Response Time": "23",
+        "Average Response Time": "28.34849015994125",
+        "Min Response Time": "8.913500001654029",
+        "Max Response Time": "604.6769999957178",
+        "Average Content Size": "83.75895879537761",
+        "Requests/s": "72.21784853459394",
+        "Failures/s": "0.0",
+        "50%": "23",
+        "66%": "30",
+        "75%": "35",
+        "80%": "38",
+        "90%": "49",
+        "95%": "62",
+        "98%": "84",
+        "99%": "100",
+        "99.9%": "180",
+        "99.99%": "600",
+        "100%": "600"
+      },
+      "queuepool_timeouts": 0
+    },
+    {
+      "run": "R0-2",
+      "configuration": {
+        "journal_mode": "delete",
+        "busy_timeout": 5000,
+        "pool_size": 5,
+        "max_overflow": 10
+      },
+      "logins": {
+        "successful": 50,
+        "failed": 0
+      },
+      "locust_exit_code": 0,
+      "elapsed_seconds": 122.15,
+      "statistics": {
+        "Type": "",
+        "Name": "Aggregated",
+        "Request Count": "4325",
+        "Failure Count": "0",
+        "Median Response Time": "320",
+        "Average Response Time": "628.0951769248757",
+        "Min Response Time": "15.578099999402184",
+        "Max Response Time": "3975.5250999951386",
+        "Average Content Size": "83.51375722543352",
+        "Requests/s": "36.26769100240772",
+        "Failures/s": "0.0",
+        "50%": "320",
+        "66%": "650",
+        "75%": "880",
+        "80%": "1100",
+        "90%": "1700",
+        "95%": "2100",
+        "98%": "2400",
+        "99%": "2700",
+        "99.9%": "3500",
+        "99.99%": "4000",
+        "100%": "4000"
+      },
+      "queuepool_timeouts": 0
+    },
+    {
+      "run": "R1-2",
+      "configuration": {
+        "journal_mode": "wal",
+        "busy_timeout": 30000,
+        "pool_size": 40,
+        "max_overflow": 10
+      },
+      "logins": {
+        "successful": 50,
+        "failed": 0
+      },
+      "locust_exit_code": 0,
+      "elapsed_seconds": 121.09,
+      "statistics": {
+        "Type": "",
+        "Name": "Aggregated",
+        "Request Count": "7059",
+        "Failure Count": "0",
+        "Median Response Time": "38",
+        "Average Response Time": "108.68812531513527",
+        "Min Response Time": "9.115900000324473",
+        "Max Response Time": "3796.920599997975",
+        "Average Content Size": "83.60631817537895",
+        "Requests/s": "59.37995398102452",
+        "Failures/s": "0.0",
+        "50%": "38",
+        "66%": "89",
+        "75%": "210",
+        "80%": "250",
+        "90%": "300",
+        "95%": "330",
+        "98%": "360",
+        "99%": "380",
+        "99.9%": "470",
+        "99.99%": "3800",
+        "100%": "3800"
+      },
+      "queuepool_timeouts": 0
+    },
+    {
+      "run": "R2-2",
+      "configuration": {
+        "journal_mode": "wal",
+        "busy_timeout": 30000,
+        "pool_size": 50,
+        "max_overflow": 50
+      },
+      "logins": {
+        "successful": 50,
+        "failed": 0
+      },
+      "locust_exit_code": 0,
+      "elapsed_seconds": 121.59,
+      "statistics": {
+        "Type": "",
+        "Name": "Aggregated",
+        "Request Count": "7574",
+        "Failure Count": "0",
+        "Median Response Time": "34",
+        "Average Response Time": "112.4710531819214",
+        "Min Response Time": "8.79210000130115",
+        "Max Response Time": "532.012499999837",
+        "Average Content Size": "83.60826511750726",
+        "Requests/s": "63.70862701032204",
+        "Failures/s": "0.0",
+        "50%": "34",
+        "66%": "69",
+        "75%": "240",
+        "80%": "270",
+        "90%": "320",
+        "95%": "360",
+        "98%": "400",
+        "99%": "420",
+        "99.9%": "470",
+        "99.99%": "530",
+        "100%": "530"
+      },
+      "queuepool_timeouts": 0
+    },
+    {
+      "run": "R3-2",
+      "configuration": {
+        "journal_mode": "wal",
+        "busy_timeout": 30000,
+        "pool_size": 5,
+        "max_overflow": 10
+      },
+      "logins": {
+        "successful": 50,
+        "failed": 0
+      },
+      "locust_exit_code": 0,
+      "elapsed_seconds": 121.65,
+      "statistics": {
+        "Type": "",
+        "Name": "Aggregated",
+        "Request Count": "5920",
+        "Failure Count": "0",
+        "Median Response Time": "250",
+        "Average Response Time": "243.74698773646733",
+        "Min Response Time": "18.63759999832837",
+        "Max Response Time": "4152.414800002589",
+        "Average Content Size": "83.55388513513513",
+        "Requests/s": "49.71769961386001",
+        "Failures/s": "0.0",
+        "50%": "250",
+        "66%": "280",
+        "75%": "300",
+        "80%": "310",
+        "90%": "340",
+        "95%": "370",
+        "98%": "420",
+        "99%": "470",
+        "99.9%": "960",
+        "99.99%": "4200",
+        "100%": "4200"
+      },
+      "queuepool_timeouts": 0
+    },
+    {
+      "run": "R0-3",
+      "configuration": {
+        "journal_mode": "delete",
+        "busy_timeout": 5000,
+        "pool_size": 5,
+        "max_overflow": 10
+      },
+      "logins": {
+        "successful": 50,
+        "failed": 0
+      },
+      "locust_exit_code": 0,
+      "elapsed_seconds": 121.63,
+      "statistics": {
+        "Type": "",
+        "Name": "Aggregated",
+        "Request Count": "3497",
+        "Failure Count": "0",
+        "Median Response Time": "620",
+        "Average Response Time": "812.8405575636433",
+        "Min Response Time": "32.20679999503773",
+        "Max Response Time": "3922.7767000047606",
+        "Average Content Size": "83.6045181584215",
+        "Requests/s": "29.183077797014636",
+        "Failures/s": "0.0",
+        "50%": "620",
+        "66%": "820",
+        "75%": "1000",
+        "80%": "1100",
+        "90%": "1700",
+        "95%": "2100",
+        "98%": "2400",
+        "99%": "2800",
+        "99.9%": "3700",
+        "99.99%": "3900",
+        "100%": "3900"
+      },
+      "queuepool_timeouts": 0
+    },
+    {
+      "run": "R1-3",
+      "configuration": {
+        "journal_mode": "wal",
+        "busy_timeout": 30000,
+        "pool_size": 40,
+        "max_overflow": 10
+      },
+      "logins": {
+        "successful": 50,
+        "failed": 0
+      },
+      "locust_exit_code": 0,
+      "elapsed_seconds": 121.71,
+      "statistics": {
+        "Type": "",
+        "Name": "Aggregated",
+        "Request Count": "6867",
+        "Failure Count": "0",
+        "Median Response Time": "46",
+        "Average Response Time": "126.85731555264138",
+        "Min Response Time": "9.356400005344767",
+        "Max Response Time": "4001.3856000005035",
+        "Average Content Size": "83.59429153924567",
+        "Requests/s": "57.77416569727605",
+        "Failures/s": "0.0",
+        "50%": "46",
+        "66%": "170",
+        "75%": "250",
+        "80%": "270",
+        "90%": "320",
+        "95%": "360",
+        "98%": "390",
+        "99%": "410",
+        "99.9%": "480",
+        "99.99%": "4000",
+        "100%": "4000"
+      },
+      "queuepool_timeouts": 0
+    },
+    {
+      "run": "R2-3",
+      "configuration": {
+        "journal_mode": "wal",
+        "busy_timeout": 30000,
+        "pool_size": 50,
+        "max_overflow": 50
+      },
+      "logins": {
+        "successful": 50,
+        "failed": 0
+      },
+      "locust_exit_code": 0,
+      "elapsed_seconds": 121.63,
+      "statistics": {
+        "Type": "",
+        "Name": "Aggregated",
+        "Request Count": "5817",
+        "Failure Count": "0",
+        "Median Response Time": "280",
+        "Average Response Time": "258.77731280729733",
+        "Min Response Time": "18.31769999989774",
+        "Max Response Time": "3967.955600004643",
+        "Average Content Size": "83.53378029912326",
+        "Requests/s": "48.834695781050804",
+        "Failures/s": "0.0",
+        "50%": "280",
+        "66%": "300",
+        "75%": "320",
+        "80%": "330",
+        "90%": "360",
+        "95%": "390",
+        "98%": "430",
+        "99%": "450",
+        "99.9%": "950",
+        "99.99%": "4000",
+        "100%": "4000"
+      },
+      "queuepool_timeouts": 0
+    },
+    {
+      "run": "R3-3",
+      "configuration": {
+        "journal_mode": "wal",
+        "busy_timeout": 30000,
+        "pool_size": 5,
+        "max_overflow": 10
+      },
+      "logins": {
+        "successful": 50,
+        "failed": 0
+      },
+      "locust_exit_code": 0,
+      "elapsed_seconds": 121.73,
+      "statistics": {
+        "Type": "",
+        "Name": "Aggregated",
+        "Request Count": "5829",
+        "Failure Count": "0",
+        "Median Response Time": "270",
+        "Average Response Time": "260.1851784354465",
+        "Min Response Time": "17.37460000003921",
+        "Max Response Time": "3965.8930000005057",
+        "Average Content Size": "83.49751243781094",
+        "Requests/s": "48.938344272754726",
+        "Failures/s": "0.0",
+        "50%": "270",
+        "66%": "300",
+        "75%": "310",
+        "80%": "320",
+        "90%": "360",
+        "95%": "390",
+        "98%": "450",
+        "99%": "490",
+        "99.9%": "930",
+        "99.99%": "4000",
+        "100%": "4000"
+      },
+      "queuepool_timeouts": 0
+    }
+  ]
+}

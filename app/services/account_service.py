@@ -1,6 +1,6 @@
 """Business logic for account and customer operations.
 
-Owner: Member 2 (Vijay). Stories: US-08, US-10, US-12.
+Owner: Member 2 (Vijay). Stories: US-08, US-10, US-12, US-14.
 """
 
 import secrets
@@ -371,3 +371,15 @@ def update_account_status(
             raise
 
         return account
+
+
+def get_customer_accounts(db: Session, customer_id: int) -> list[Account]:
+    """Retrieve all bank accounts belonging to a given customer ID (US-14, BMS-NF-004)."""
+    return list(
+        db.scalars(
+            select(Account)
+            .where(Account.customer_id == customer_id)
+            .order_by(Account.id.asc())
+        ).all()
+    )
+

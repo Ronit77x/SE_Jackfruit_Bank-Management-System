@@ -51,17 +51,55 @@ Verify that the Bank Management System customer web application satisfies `BMS-N
 
 ## 3. Browser & Version Compatibility Matrix
 
-Per course engineering standards, this matrix strictly distinguishes between **currently installed & executed versions** versus **uninstalled previous versions** ($n-1$). Previous versions are marked as pending external lab execution.
+Per course engineering standards, this matrix strictly distinguishes between **currently installed & executed versions** versus **uninstalled previous versions**. Previous versions are marked as pending external lab execution.
 
 | Browser | Version | Engine | Status | Testing Method | Evidence / Artifacts |
 | :--- | :---: | :---: | :---: | :--- | :--- |
 | **Google Chrome** | `157.0.8103.51` | Blink / Chromium | **PASS** | Automated Playwright execution on canonical UI (`/ui/transfer.html`) | Full-journey screenshots `chrome_desktop_1280_*.png`, `chrome_mobile_360_*.png` (Details, Review, Receipt) |
-| **Google Chrome** | `155.x` ($n-1$) | Blink / Chromium | **PENDING** | *Not installed locally on test machine* | Requires multi-version CI or cloud browser farm (e.g. BrowserStack) |
+| **Google Chrome** | `155.x` | Blink / Chromium | **PENDING** | *Not installed locally on test machine* | Requires multi-version CI or cloud browser farm (e.g. BrowserStack) |
 | **Microsoft Edge** | `157.0.4341.60` | Blink / Chromium | **PASS** | Automated Playwright execution on canonical UI (`/ui/transfer.html`) | Full-journey screenshots `edge_desktop_1280_*.png`, `edge_mobile_360_*.png` (Details, Review, Receipt) |
-| **Microsoft Edge** | `155.x` ($n-1$) | Blink / Chromium | **PENDING** | *Not installed locally on test machine* | Requires multi-version CI or cloud browser farm (e.g. BrowserStack) |
+| **Microsoft Edge** | `155.x` | Blink / Chromium | **PENDING** | *Not installed locally on test machine* | Requires multi-version CI or cloud browser farm (e.g. BrowserStack) |
 | **Mozilla Firefox Desktop** | `159.0` | Gecko | **PASS** | Automated Selenium execution on canonical UI (`/ui/transfer.html`) | Full-journey screenshots `firefox_desktop_1280_*.png` (Details, Review, Receipt) |
 | **Mozilla Firefox Mobile** | `153.0` | Gecko | **PASS** | Automated Playwright Gecko execution (genuine 360 px viewport) | Full-journey screenshots `firefox_mobile_360_*.png` (Details, Review, Receipt) |
-| **Mozilla Firefox** | `146.x` ($n-1$) | Gecko | **PENDING** | *Not installed locally on test machine* | Requires multi-version CI or cloud browser farm (e.g. BrowserStack) |
+| **Mozilla Firefox** | `146.x` | Gecko | **PENDING** | *Not installed locally on test machine* | Requires multi-version CI or cloud browser farm (e.g. BrowserStack) |
+
+---
+
+## Browser Evidence Execution Record
+
+- **Application commit tested:** `ed26f31c8184fe608192b4ad443a2aa0d224d021`
+- **Execution date:** 2026-11-16
+- **Branch:** `feature/US-15-browser-compatibility`
+- **PR target:** `main`
+- **Browser matrix command:** `python tests/ui/run_browser_matrix.py`
+- **Full regression command:** `pytest -v`
+- **Browser compatibility tests:** `pytest tests/test_accounts_browser_compatibility.py -v`
+- **Transfer UI tests:** `pytest tests/test_accounts_transfer_ui.py -v`
+- **JavaScript checks:** `node tests/ui/transfer_check.js`
+
+### Results
+
+- Browser matrix: six browser/viewport configurations completed successfully.
+- Full regression: 448 passed, 1 warning (176.33 seconds).
+- Browser compatibility tests: 11 passed, 1 warning.
+- Transfer UI tests: 27 passed, 1 warning.
+- JavaScript static/unit checks: passed.
+
+### Browser versions
+
+- Chrome: 157.0.8103.51
+- Edge: 157.0.4341.60
+- Firefox desktop: 159.0
+- Firefox mobile Playwright Gecko engine: 153.0
+
+The Firefox mobile result uses Playwright's Gecko engine and must not be represented as a test of the installed Firefox 159.0 desktop binary at a native 360px window size.
+
+### Version coverage limitation
+
+The latest-two-version requirement in BMS-NF-006 remains **PENDING**.
+The executed matrix verifies the listed installed browser versions only.
+No previous-version or latest-two-version coverage is claimed.
+Verification across the latest two releases requires additional browser versions or a multi-version browser testing environment.
 
 ---
 
@@ -172,9 +210,8 @@ The following screenshots document the live canonical application UI (`app/stati
 
 ---
 
-## 7. Remaining Actions & Pull Request Targeting
+## Remaining Actions & Pull Request Targeting
 
-1. **Prior Minor Versions ($n-1$):**
-   - Verification for Chrome 155, Edge 155, and Firefox 146 remains pending access to an external device laboratory (BrowserStack or SauceLabs) or a dedicated multi-version CI pipeline.
-2. **Pull Request Target:**
-   - PR #61 targets `feature/US-14-fund-transfer-usability` (PR #60), preserving the canonical fund transfer implementation and integrating all latest review updates.
+1. **Latest-two-version coverage — PENDING:** The current evidence verifies the installed browser versions listed above. Testing the latest two versions of Chrome, Edge, and Firefox remains outstanding. No unverified versions are labelled as n-1.
+2. **Physical device/touchscreen testing — PENDING:** Automated viewport emulation does not establish physical touchscreen-device compatibility.
+3. **Pull request:** PR #61 targets `main`. PR #60 has been merged.

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bank Management System - Transfer Money</title>
   <link rel="stylesheet" href="/ui/css/style.css">
   <link rel="stylesheet" href="/ui/css/transfer.css">
@@ -61,11 +61,12 @@
             id="toAccountInput"
             maxlength="10"
             inputmode="numeric"
+            pattern="[0-9]{10}"
             placeholder="Enter 10-digit account number (e.g. 1000000003)"
             required
           >
           <div class="field-helper" id="toAccountHelp">Enter the exact 10-digit destination account number.</div>
-          <div class="field-error" id="toAccountError" hidden></div>
+          <div class="field-error" id="toAccountError" role="alert" hidden></div>
         </div>
 
         <div>
@@ -87,7 +88,7 @@
             <button type="button" class="quick-amount-btn" data-amount="5000">₹5,000</button>
           </div>
           <div class="field-helper" id="amountHelp">Limit: ₹1,00,000 per transaction. Fee: ₹0 (Free transfer).</div>
-          <div class="field-error" id="amountError" hidden></div>
+          <div class="field-error" id="amountError" role="alert" hidden></div>
         </div>
 
         <button type="submit" id="btnReview">Review transfer details →</button>
@@ -122,7 +123,7 @@
         </div>
       </div>
 
-      <div class="actions">
+      <div class="actions btn-group">
         <button type="button" class="secondary" id="btnBackToEdit">← Back to edit</button>
         <button type="button" id="btnConfirmSend" data-action="executeTransfer">Confirm &amp; send transfer</button>
       </div>
@@ -156,7 +157,7 @@
           </div>
         </div>
 
-        <div class="actions">
+        <div class="actions btn-group">
           <button type="button" class="secondary" id="btnPrintReceipt" data-action="printReceipt">Print receipt</button>
           <button type="button" id="btnNewTransfer">Make another transfer</button>
         </div>
@@ -169,7 +170,7 @@
           <p id="failureMessage" class="muted"></p>
         </div>
 
-        <div class="actions">
+        <div class="actions btn-group">
           <button type="button" id="btnFailureBack">← Back and correct details</button>
         </div>
       </div>

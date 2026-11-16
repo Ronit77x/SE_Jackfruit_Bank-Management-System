@@ -2,240 +2,240 @@
   "chrome": {
     "desktop_1280": {
       "details": {
-        "card": {
-          "left": 308.5,
-          "right": 956.5,
-          "width": 648
-        },
-        "clientWidth": 1265,
         "innerWidth": 1280,
-        "scrollWidth": 1265,
-        "stepDividers": [
-          32,
-          32
-        ],
+        "clientWidth": 1280,
+        "scrollWidth": 1280,
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
         "stepsIndicator": {
-          "left": 308.5,
-          "right": 956.5,
-          "width": 648
-        }
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepDividers": [
+          28,
+          28
+        ]
       },
       "review": {
-        "card": {
-          "left": 316,
-          "right": 964,
-          "width": 648
-        },
-        "clientWidth": 1280,
         "innerWidth": 1280,
+        "clientWidth": 1280,
         "scrollWidth": 1280,
-        "stepDividers": [
-          32,
-          32
-        ],
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
         "stepsIndicator": {
-          "left": 316,
-          "right": 964,
-          "width": 648
-        }
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepDividers": [
+          28,
+          28
+        ]
       },
       "receipt": {
-        "card": {
-          "left": 316,
-          "right": 964,
-          "width": 648
-        },
-        "clientWidth": 1280,
         "innerWidth": 1280,
+        "clientWidth": 1280,
         "scrollWidth": 1280,
-        "stepDividers": [
-          32,
-          32
-        ],
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
         "stepsIndicator": {
-          "left": 316,
-          "right": 964,
-          "width": 648
-        }
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepDividers": [
+          28,
+          28
+        ]
       }
     },
     "mobile_360": {
       "details": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
         "card": {
           "left": 10,
           "right": 350,
           "width": 340
         },
-        "clientWidth": 360,
-        "innerWidth": 360,
-        "scrollWidth": 360,
-        "stepDividers": [
-          62.53,
-          62.55
-        ],
         "stepsIndicator": {
           "left": 10,
           "right": 350,
           "width": 340
-        }
+        },
+        "stepDividers": [
+          63.16,
+          63.17
+        ]
       },
       "review": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
         "card": {
           "left": 10,
           "right": 350,
           "width": 340
         },
-        "clientWidth": 360,
-        "innerWidth": 360,
-        "scrollWidth": 360,
-        "stepDividers": [
-          62.53,
-          62.55
-        ],
         "stepsIndicator": {
           "left": 10,
           "right": 350,
           "width": 340
-        }
+        },
+        "stepDividers": [
+          63.16,
+          63.17
+        ]
       },
       "receipt": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
         "card": {
           "left": 10,
           "right": 350,
           "width": 340
         },
-        "clientWidth": 360,
-        "innerWidth": 360,
-        "scrollWidth": 360,
-        "stepDividers": [
-          62.53,
-          62.55
-        ],
         "stepsIndicator": {
           "left": 10,
           "right": 350,
           "width": 340
-        }
+        },
+        "stepDividers": [
+          63.16,
+          63.17
+        ]
       }
     }
   },
   "edge": {
     "desktop_1280": {
       "details": {
-        "card": {
-          "left": 308.5,
-          "right": 956.5,
-          "width": 648
-        },
-        "clientWidth": 1265,
         "innerWidth": 1280,
-        "scrollWidth": 1265,
-        "stepDividers": [
-          32,
-          32
-        ],
+        "clientWidth": 1280,
+        "scrollWidth": 1280,
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
         "stepsIndicator": {
-          "left": 308.5,
-          "right": 956.5,
-          "width": 648
-        }
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepDividers": [
+          28,
+          28
+        ]
       },
       "review": {
-        "card": {
-          "left": 316,
-          "right": 964,
-          "width": 648
-        },
-        "clientWidth": 1280,
         "innerWidth": 1280,
+        "clientWidth": 1280,
         "scrollWidth": 1280,
-        "stepDividers": [
-          32,
-          32
-        ],
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
         "stepsIndicator": {
-          "left": 316,
-          "right": 964,
-          "width": 648
-        }
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepDividers": [
+          28,
+          28
+        ]
       },
       "receipt": {
-        "card": {
-          "left": 316,
-          "right": 964,
-          "width": 648
-        },
-        "clientWidth": 1280,
         "innerWidth": 1280,
+        "clientWidth": 1280,
         "scrollWidth": 1280,
-        "stepDividers": [
-          32,
-          32
-        ],
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
         "stepsIndicator": {
-          "left": 316,
-          "right": 964,
-          "width": 648
-        }
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepDividers": [
+          28,
+          28
+        ]
       }
     },
     "mobile_360": {
       "details": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
         "card": {
           "left": 10,
           "right": 350,
           "width": 340
         },
-        "clientWidth": 360,
-        "innerWidth": 360,
-        "scrollWidth": 360,
-        "stepDividers": [
-          62.53,
-          62.55
-        ],
         "stepsIndicator": {
           "left": 10,
           "right": 350,
           "width": 340
-        }
+        },
+        "stepDividers": [
+          63.16,
+          63.17
+        ]
       },
       "review": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
         "card": {
           "left": 10,
           "right": 350,
           "width": 340
         },
-        "clientWidth": 360,
-        "innerWidth": 360,
-        "scrollWidth": 360,
-        "stepDividers": [
-          62.53,
-          62.55
-        ],
         "stepsIndicator": {
           "left": 10,
           "right": 350,
           "width": 340
-        }
+        },
+        "stepDividers": [
+          63.16,
+          63.17
+        ]
       },
       "receipt": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
         "card": {
           "left": 10,
           "right": 350,
           "width": 340
         },
-        "clientWidth": 360,
-        "innerWidth": 360,
-        "scrollWidth": 360,
-        "stepDividers": [
-          62.53,
-          62.55
-        ],
         "stepsIndicator": {
           "left": 10,
           "right": 350,
           "width": 340
-        }
+        },
+        "stepDividers": [
+          63.16,
+          63.17
+        ]
       }
     }
   },
@@ -243,62 +243,142 @@
     "desktop_1280": {
       "details": {
         "card": {
-          "left": 359,
-          "right": 1007,
-          "width": 648
+          "left": 176,
+          "right": 1104,
+          "width": 928
         },
-        "clientWidth": 1366,
-        "innerWidth": 1366,
-        "scrollWidth": 1366,
+        "clientWidth": 1280,
+        "innerWidth": 1280,
+        "scrollWidth": 1280,
         "stepDividers": [
-          32,
-          32
+          28,
+          28
         ],
         "stepsIndicator": {
-          "left": 359,
-          "right": 1007,
-          "width": 648
+          "left": 176,
+          "right": 1104,
+          "width": 928
         }
       },
       "review": {
         "card": {
-          "left": 359,
-          "right": 1007,
-          "width": 648
+          "left": 176,
+          "right": 1104,
+          "width": 928
         },
-        "clientWidth": 1366,
-        "innerWidth": 1366,
-        "scrollWidth": 1366,
+        "clientWidth": 1280,
+        "innerWidth": 1280,
+        "scrollWidth": 1280,
         "stepDividers": [
-          32,
-          32
+          28,
+          28
         ],
         "stepsIndicator": {
-          "left": 359,
-          "right": 1007,
-          "width": 648
+          "left": 176,
+          "right": 1104,
+          "width": 928
         }
       },
       "receipt": {
         "card": {
-          "left": 359,
-          "right": 1007,
-          "width": 648
+          "left": 176,
+          "right": 1104,
+          "width": 928
         },
-        "clientWidth": 1366,
-        "innerWidth": 1366,
-        "scrollWidth": 1366,
+        "clientWidth": 1280,
+        "innerWidth": 1280,
+        "scrollWidth": 1280,
         "stepDividers": [
-          32,
-          32
+          28,
+          28
         ],
         "stepsIndicator": {
-          "left": 359,
-          "right": 1007,
-          "width": 648
+          "left": 176,
+          "right": 1104,
+          "width": 928
         }
       }
     },
-    "mobile_360": {}
+    "mobile_360": {
+      "details": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "card": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepsIndicator": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepDividers": [
+          63.12,
+          63.12
+        ]
+      },
+      "review": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "card": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepsIndicator": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepDividers": [
+          63.12,
+          63.12
+        ]
+      },
+      "receipt": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "card": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepsIndicator": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepDividers": [
+          63.12,
+          63.12
+        ]
+      }
+    },
+    "selenium_system_firefox_windows_limitation": {
+      "measured": {
+        "card": {
+          "left": 16,
+          "right": 484,
+          "width": 468
+        },
+        "clientWidth": 500,
+        "innerWidth": 500,
+        "scrollWidth": 500,
+        "stepDividers": [
+          14,
+          14
+        ],
+        "stepsIndicator": {
+          "left": 16,
+          "right": 484,
+          "width": 468
+        }
+      },
+      "limitation": "Windows OS Win32 minimum window tracking size clamps native Firefox top-level window to 500px"
+    }
   }
 }

@@ -1,10 +1,171 @@
-# Deviations from the submitted documents
+# Deviations and delivery status: Sprint 1 and Sprint 2
 
-Log every place where the implementation differs from the SRS, SAD or Test Plan. These are explained at the final demo.
+Updated: **16 November 2026**. Evidence baseline: main
+`ed030a7716130df305e121ffb3cd6c788ea49d9f` after PR #65.
 
-| Date | Story | Document and section | What the document says | What we did instead | Reason |
-|---|---|---|---|---|---|
-| 22-10-2026 | Sprint 1 (all) | SRS 3.1 User interface; SAD 4.5 UX design | A browser-based HTML/CSS/JavaScript interface for Customer, Teller and Admin | Sprint 1 is demonstrated through the FastAPI interactive API page (/docs); there are no HTML screens yet | Sprint 1 stories cover the backend services; the UI is planned for Sprint 2 (US-14, US-15) |
-| 22-10-2026 | US-17, US-18 | SAD 4.3 API design | Request field accountId for deposit and withdrawal, with no type stated | accountId is the 10-digit account number (a string); fromAccount and toAccount follow the same convention | The account number is unique (BR-06) and is the identifier users know |
-| 22-10-2026 | US-17, US-18, US-19 | SAD 4.3 and 4.4 | An error list per endpoint (for example 400, 403, 409, 422) | Extra codes are also returned: 404 ACCOUNT_NOT_FOUND, 400 VALIDATION_ERROR for malformed requests and 400 INVALID_TRANSFER for same-account transfers. All errors use the standard JSON format (code, message, timestamp, traceId) | The SAD list is not exhaustive; the extra codes make failures explicit |
-| 22-10-2026 | US-17, US-18, US-19 | SAD 4.3 API design | Responses return balance, with no type stated | Money amounts are returned as decimal strings, for example "1500.00" | Avoids the rounding errors floating-point numbers can cause |
+This record distinguishes implementation choices, late deliverables and unmet
+or incompletely verified acceptance criteria. Recording a limitation does not
+change the submitted SRS or establish that an assessor has waived it. This is
+a submission-status record, not a claim that release or recording is complete.
+
+## Delivery timeline deviation (both sprints)
+
+The project-board windows supplied by the team were **19–25 October 2026 for
+Sprint 1** and **26 October–1 November 2026 for Sprint 2**. Some issue bodies use
+narrower working-week dates; these dates refer to the board, not a revised
+assignment deadline.
+
+Integration, corrective reviews, verification and demonstration preparation
+continued during **14–16 November 2026**, beyond the planned windows. Sprint 1
+demonstration evidence is committed through PR #74. Sprint 2 recording remains
+pending: **Vaibhava L. (Member 4)** records it, and Ronit handles repository
+publication and merges.
+
+The delivery overrun occurred while dependent branches were integrated, review
+findings were resolved, and shared authentication, role-specific UI and
+security/data-integrity checks were completed. The original plan did not
+adequately allow for this integration and verification work before recording.
+Dependency-ordered merges and regression checks were completed before
+demonstrating the integrated application. This explains the observed work and
+delay without blaming an individual or inventing an external event. Late
+delivery remains a schedule deviation.
+
+Remaining delivery actions are the Sprint 2 recording/publication and final
+documentation/release review in PR #68 (US-07, issue #36). Merging this record
+does not complete the demo. Its actual date and published link must be added
+to the release documentation afterward.
+
+## Sprint 1 implementation and presentation deviations
+
+The original four entries were recorded on 22 October 2026; their current
+disposition below was reviewed on 16 November 2026.
+
+| ID | Story / baseline | Observed implementation or presentation | Reason and current disposition |
+|---|---|---|---|
+| S1-01 | Sprint 1; SRS §3.1 and SAD §4.5 describe Customer, Teller and Admin browser screens | The Sprint 1 video uses FastAPI Swagger UI (`/docs`). Role-specific HTML screens were integrated in Sprint 2. | UI integration followed the backend foundation. This is a Sprint 1 sequencing/presentation deviation, not a claim that Swagger is the finished portal. Browser pages now exist through PRs #62, #75, #76, #77, #79, #81, #60 and #61. |
+| S1-02 | US-17/18/19; SAD §4.3 account identifiers | Deposit/withdrawal `accountId` and transfer `fromAccount`/`toAccount` are ten-digit account-number strings, not internal database IDs. | Clarifies the identifier used for transactions. Owned-account history separately supports internal IDs without changing these payloads. |
+| S1-03 | US-17/18/19; SAD §§4.3–4.4 error lists | Explicit outcomes include HTTP 404 `ACCOUNT_NOT_FOUND`, HTTP 400 `VALIDATION_ERROR`, and HTTP 400 `INVALID_TRANSFER` for same-account transfers. The standard response also contains a compatibility `detail` field. | Endpoint error lists were not exhaustive. The response retains `code`, `message`, `timestamp` and `traceId`, with understandable rejection messages and existing client compatibility. |
+| S1-04 | US-17/18/19; SAD §4.3 monetary responses | Monetary values are decimal strings such as `"1500.00"`, rather than binary floating-point JSON numbers. | Preserves exact paise in transport. This representation choice does not relax transaction integrity. |
+
+## Sprint 2 acceptance deviations and verification limits
+
+### S2-01 — First-time-user usability: minimum sample not met
+
+**US-14, issue #12; BMS-NF-004; TC-UX-01; PR #60.** The original criterion is at
+least five genuine first-time users, with at least `ceil(0.90 × n)` completing
+an accurate transfer unaided within 120 seconds. Five users require five
+successes.
+
+**Submission decision, 16 November:** the five-participant trial will not be
+completed for this submission. Recruitment is limited to two potential
+independent first-time participants within the remaining testing window;
+three additional participants are unavailable. This participant-availability
+constraint is the reason for the reduced evaluation scope, not proof that the
+target was met.
+
+The committed observation sheet currently contains **zero completed human
+trials**. Two available people must not be described as two tested people.
+The transfer wizard, API/ledger tests and browser checks verify functionality,
+not human usability acceptance.
+
+If the two people are tested, record actual timings, assistance, accuracy and
+feedback as an **exploratory two-person pilot**, reporting `x/2` observed
+successes only. Even `2/2` does not satisfy the minimum sample or establish the
+five-person acceptance result. Additional recruitment is not a prerequisite
+for recording this submission limitation.
+
+**Disposition: implementation complete; formal usability acceptance not met /
+not verified.** The SRS threshold remains unchanged. Repeated attempts by one
+person do not count as independent first-time users, and no observations or
+pass rates are fabricated. Team review acknowledges the limitation; an
+instructor/customer waiver is not claimed and must be recorded separately if
+obtained. See the [protocol](test-plan/TC-UX-01-usability-test-protocol.md) and
+[observation sheet](test-plan/TC-UX-01-observation-sheet.md).
+
+### S2-02 — Browser coverage is partial
+
+**US-15, issue #13; BMS-NF-006; TC-UX-02; PR #61.** Recorded authenticated
+journeys cover Chrome 157.0.8103.51, Edge 157.0.4341.60, Firefox desktop 159.0,
+and Playwright Firefox/Gecko 153.0 at 360px. The Gecko viewport run is not a
+claim about the installed Firefox 159 desktop binary at a native 360px size.
+Viewport emulation does not establish physical touchscreen compatibility.
+
+The latest **two** releases of every browser were not verified: the recorded
+environment covers only available binaries/engine versions. Full BMS-NF-006
+version coverage remains **unverified**. A merged PR or closed issue does not
+change that evidence status. The original criterion remains unchanged; no
+unsupported `n-1` labels or blanket acceptance claim is made. See the
+[browser report](test-plan/TC-UX-02-browser-compatibility.md).
+
+### S2-03 — Monthly availability is not demonstrated
+
+**US-30, issue #23; BMS-NF-002; TC-Ops-01; PRs #54 and #82.** The health
+endpoint, monitor and analyzer exist. At this evidence baseline, the tracked
+[uptime CSV](test-plan/uptime-log.csv) contains one successful observation on
+2 November 2026 (HTTP 200, 22.85 ms), not a complete month. Later data must be
+reported with its actual window, failures, gaps and maintenance treatment;
+uncommitted monitoring data is not assessed here.
+
+The local verification window is shorter than the complete November calendar
+month, and no complete earlier-month log is supplied. Neither a smoke check
+nor the load test proves 99.5% monthly availability. Scheduled-maintenance
+exclusion is also unverified. The monthly target remains **unverified**;
+implementation and measured samples are reported separately. See the
+[monitoring instructions](test-plan/uptime-monitoring.md).
+
+### S2-04 — Statement format clarification
+
+**US-21; BMS-F-024; TC-Stmt-02; PRs #64 and #75.** Complete, date-filtered CSV
+statement download and auditing are implemented; PDF export is not. The SRS
+requirement says **CSV or PDF**, so CSV satisfies that format alternative.
+Overview wording `CSV/PDF` must not be presented as both formats being
+implemented. This is a scope clarification, not an invented failed criterion.
+
+### S2-05 — HTTPS verification is local, not a production deployment
+
+**US-27; BMS-SR-001 / BMS-SR-005; PRs #48, #72 and #78.** Recorded TLS 1.2/1.3
+negotiation, legacy-protocol refusal, validation and output encoding apply to
+the documented local Uvicorn HTTPS setup. The Nginx configuration was inspected
+but not runtime-tested as a deployed reverse proxy. Public-CA deployment is
+not evidenced. Local HTTP load-test results are not deployed HTTPS performance.
+See the [security verification](security/us-27-verification.md).
+
+### S2-06 — Audit retention verification boundary
+
+**US-31; BMS-NF-005; TC-Aud-02; PRs #55 and #80.** Timestamped audit records,
+database update/delete rejection and the five-year policy are verified; no
+application purge job exists. This satisfies configuration/append-only
+verification scope, but does not empirically prove five years of elapsed
+storage or external backup/disaster-recovery retention. Those operational
+claims remain unverified. See the
+[audit record](security/US-31-audit-append-only-verification.md).
+
+### S2-07 — Performance acceptance passed within the recorded workload
+
+**US-22, issue #15; BMS-NF-001; TC-Perf-01; PRs #63 and #65.** The final test
+uses 50 users over 120 seconds including ramp-up and login, on one workstation
+over local HTTP. It records 8,569 requests, no failures and endpoint p95 values
+of 61–62 ms, with source provenance and ledger reconciliation in the
+[load-test report](test-plan/load-test-results.md).
+
+The baseline does not specify a minimum steady-state duration. Its stated
+50-user/p95 criterion is satisfied; this is **not** an unmet acceptance
+criterion. Sustained production capacity, network/TLS overhead, other endpoints
+and monthly availability are outside this evidence.
+
+## Submission and issue disposition
+
+- Issue #15 may be closed as **Completed**, linking the merged benchmark.
+- If the team closes #12 because no further recruitment is planned, use
+  **Not planned**, explain the implemented functionality and unmet acceptance,
+  and link this record after review. Do not mark all criteria passed.
+- For #13, latest-two-version acceptance is unverified even if it was already
+  closed. Clarify its closure; retain/reopen the issue for unmet acceptance.
+  If further matrix work is deliberately dropped, close that remaining work
+  as Not planned with the limitation linked after review.
+- Issue #23's monthly target and #36's final release are not completed by this
+  document. Keep their outstanding criteria visible.
+- PR #45 requires normal team review. Approval acknowledges accurate reporting,
+  not an external waiver of SRS acceptance criteria.
+- Sprint 2 recording/publication remains pending. Final release notes must
+  link this record and the actual videos, retaining unresolved limitations.

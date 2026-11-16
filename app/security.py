@@ -1,7 +1,9 @@
-"""Password and sensitive-data security helpers for US-05.
+"""Password and sensitive-data security helpers for US-04 and US-05.
 
-The two functions below are a working starting point so that other members (for example the
 The hashing functions remain compatible with the authentication and seed code.
+Bcrypt has an architectural input limit of 72 bytes. Passwords are validated
+against this limit in UTF-8 byte length (not character count) to avoid unhandled
+500 errors or silent truncation.
 """
 import os
 
@@ -10,21 +12,57 @@ from cryptography.fernet import Fernet, InvalidToken
 
 from app.services.transaction_service import mask_account_number
 
-
 _DATA_KEY_ENV = "BMS_DATA_KEY"
+MAX_PASSWORD_BYTES = 72
 
 
 def hash_password(plain: str) -> str:
-    return bcrypt.hashpw(plain.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    encoded = plain.encode("utf-8")
+    if len(encoded) > MAX_PASSWORD_BYTES:
+        raise ValueError(f"Password cannot exceed {MAX_PASSWORD_BYTES} bytes")
+    return bcrypt.hashpw(encoded, bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain: str, password_hash: str) -> bool:
-    return bcrypt.checkpw(plain.encode("utf-8"), password_hash.encode("utf-8"))
+    try:
+        encoded = plain.encode("utf-8")
+        if len(encoded) > MAX_PASSWORD_BYTES:
+            return False
+        return bcrypt.checkpw(encoded, password_hash.encode("utf-8"))
+    except Exception:
+        return False
+
+
+def validate_password_complexity(password: str) -> tuple[bool, str]:
+    """Validate password complexity and length (BMS-F-004, US-04).
+
+    Requirements:
+    - Minimum 8 characters
+    - Maximum 72 UTF-8 bytes (bcrypt limit)
+    - At least one uppercase letter
+    - At least one lowercase letter
+    - At least one digit
+    """
+    if not isinstance(password, str):
+        return False, "Password must be a string"
+    if len(password.encode("utf-8")) > MAX_PASSWORD_BYTES:
+        return False, f"Password cannot exceed {MAX_PASSWORD_BYTES} bytes"
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long"
+    if not any(c.isupper() for c in password):
+        return False, "Password must contain at least one uppercase letter"
+    if not any(c.islower() for c in password):
+        return False, "Password must contain at least one lowercase letter"
+    if not any(c.isdigit() for c in password):
+        return False, "Password must contain at least one digit"
+    return True, ""
 
 
 def validate_password_strength(password) -> bool:
     """Return whether *password* meets the agreed minimum password policy."""
     if not isinstance(password, str) or len(password) < 8:
+        return False
+    if len(password.encode("utf-8")) > MAX_PASSWORD_BYTES:
         return False
     return (
         any(character.isupper() for character in password)

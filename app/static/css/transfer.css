@@ -1,0 +1,373 @@
+/* Scoped styling for Customer Fund Transfer (US-14 / BMS-NF-004). Responsive down to 360px. */
+[hidden] { display: none !important; }
+
+/* Cross-browser input[type=number] styling (Firefox & WebKit/Blink) */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Action button group */
+.actions,
+.btn-group {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+/* Wizard steps indicator */
+.steps-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.step-item.active {
+  color: var(--primary);
+}
+
+.step-number {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  background: var(--border);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.step-item.active .step-number {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.step-divider {
+  width: 28px;
+  height: 2px;
+  background: var(--border);
+}
+
+/* Balance display callout */
+.balance-card {
+  background: #f0f7ff;
+  border: 1px solid #c7dcf7;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.balance-card-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.balance-amount {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Quick amounts */
+.quick-amounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.quick-amount-btn {
+  background: #f1f5f9;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  margin-top: 0;
+  width: auto;
+}
+
+.quick-amount-btn:hover {
+  background: #e2e8f0;
+  color: var(--primary-dark);
+}
+
+/* Summary table for Review & Receipt */
+.summary-list {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.95rem;
+  gap: 0.5rem;
+}
+
+.summary-row:last-child {
+  border-bottom: none;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding-top: 0.75rem;
+}
+
+.summary-label {
+  color: var(--muted);
+}
+
+.summary-val {
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+  word-break: break-all;
+}
+
+/* Receipt header */
+.receipt-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.receipt-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.receipt-icon.success {
+  background: #e6f4ea;
+  color: var(--ok);
+  border: 2px solid #b7dfc2;
+}
+
+.receipt-icon.error {
+  background: #fdecea;
+  color: var(--danger);
+  border: 2px solid #f5c2be;
+}
+
+.field-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.field-helper {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+#accountTypeDisplay {
+  font-weight: 600;
+}
+
+#minBalanceHelp {
+  font-size: 0.8rem;
+}
+
+.quick-pick-label {
+  font-size: 0.8rem;
+  align-self: center;
+}
+
+#reviewAmount {
+  color: var(--primary);
+}
+
+.free-fee {
+  color: var(--ok);
+}
+
+#result-heading {
+  color: var(--ok);
+  margin-bottom: 0.25rem;
+}
+
+#receiptReference {
+  font-family: monospace;
+}
+
+#receiptAmount {
+  color: var(--ok);
+}
+
+#failureHeading {
+  color: var(--danger);
+  margin-bottom: 0.25rem;
+}
+
+/* Responsive adjustments down to 360px (BMS-NF-006, TC-UX-02) */
+@media (max-width: 600px) {
+  .step-divider {
+    width: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  main {
+    margin: 1rem auto;
+    padding: 0 0.625rem;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .card {
+    padding: 1rem 0.875rem;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .steps-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 100%;
+    gap: 0.25rem;
+    margin-bottom: 1.25rem;
+    box-sizing: border-box;
+  }
+  .step-item {
+    font-size: 0.75rem;
+    gap: 0.25rem;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+  .step-item span:not(.step-number) {
+    white-space: nowrap;
+  }
+  .step-number {
+    width: 22px;
+    height: 22px;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+  .step-divider {
+    width: 14px;
+    min-width: 6px;
+    flex: 1 1 8px;
+  }
+  .actions,
+  .btn-group {
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+  }
+  .actions button,
+  .btn-group button {
+    width: 100%;
+  }
+  .quick-amounts button {
+    flex: 1 1 calc(50% - 0.4rem);
+    text-align: center;
+  }
+  .summary-list {
+    padding: 0.875rem;
+  }
+  .summary-row {
+    font-size: 0.875rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  .summary-row:last-child {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .summary-val {
+    text-align: left;
+  }
+}
+
+@media (max-width: 380px) {
+  .card {
+    padding: 0.875rem 0.625rem;
+  }
+  .step-number {
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+  }
+  .step-item span:not(.step-number) {
+    font-size: 0.68rem;
+  }
+  .step-divider {
+    width: 8px;
+    min-width: 4px;
+    flex: 1 1 6px;
+  }
+  .steps-indicator {
+    gap: 0.15rem;
+  }
+  .quick-amounts button {
+    padding: 0.35rem 0.5rem;
+  }
+}
+
+/* Print styles: Clean receipt-only printout (TC-UX-02) */
+@media print {
+  header,
+  #site-header,
+  .steps-indicator,
+  #btnReview,
+  .actions,
+  .btn-group,
+  #globalAlert,
+  #form-heading,
+  .quick-amounts,
+  .field-helper {
+    display: none !important;
+  }
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+  main {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}

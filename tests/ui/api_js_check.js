@@ -80,6 +80,23 @@ const bms = window.bms;
   assert.strictEqual(bms.requireRole(["Customer"]), false);
   assert.strictEqual(window.location.href, "/ui/change-password.html");
 
+  // setMustChangePassword and changePassword helper
+  bms.setMustChangePassword(true);
+  assert.strictEqual(bms.mustChangePassword(), true);
+  bms.setMustChangePassword(false);
+  assert.strictEqual(bms.mustChangePassword(), false);
+
+  sessionStorage.setItem("bms_token", "tok123");
+  sessionStorage.setItem("bms_must_change", "true");
+  nextResponse = jsonResponse(200, { message: "Password changed successfully" });
+  const changeRes = await bms.changePassword("OldPassword1!", "NewPassword2@");
+  assert.strictEqual(changeRes.message, "Password changed successfully");
+  assert.strictEqual(bms.mustChangePassword(), false);
+  const lastCall = calls[calls.length - 1];
+  assert.strictEqual(lastCall.url, "/auth/change-password");
+  assert.strictEqual(lastCall.options.headers["Authorization"], "Bearer tok123");
+  assert.deepStrictEqual(JSON.parse(lastCall.options.body), { currentPassword: "OldPassword1!", newPassword: "NewPassword2@" });
+
   // DOM helpers use textContent, so markup in a value stays plain text
   const node = bms.el("p", "<img src=x onerror=alert(1)>");
   assert.strictEqual(node.textContent, "<img src=x onerror=alert(1)>");
@@ -87,6 +104,7 @@ const bms = window.bms;
   // money formatting
   assert.strictEqual(bms.money("1500"), "Rs 1,500.00");
   assert.strictEqual(bms.money("123456.5"), "Rs 1,23,456.50");
+  assert.strictEqual(bms.money("100999999999998.99"), "Rs 10,09,99,99,99,99,998.99");
 
   console.log("api.js checks passed");
 })().catch((error) => { console.error(error); process.exit(1); });

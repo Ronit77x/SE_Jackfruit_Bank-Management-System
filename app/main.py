@@ -14,12 +14,14 @@ from fastapi import FastAPI
 from app import models  # noqa: F401  (makes sure all tables are registered)
 from app.database import Base, engine
 from app.errors import register_error_handlers
-from app.routers import accounts, admin, auth, transactions
+from app.routers import accounts, admin, auth, notifications, transactions
+from app.services.audit_triggers import install_audit_triggers
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    install_audit_triggers(engine)
     yield
 
 
@@ -30,6 +32,7 @@ app.include_router(auth.router)
 app.include_router(accounts.router)
 app.include_router(transactions.router)
 app.include_router(admin.router)
+app.include_router(notifications.router)
 
 app.mount("/ui", StaticFiles(directory=Path(__file__).parent / "static", html=True), name="ui")
 

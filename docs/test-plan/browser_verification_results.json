@@ -1,0 +1,384 @@
+{
+  "chrome": {
+    "desktop_1280": {
+      "details": {
+        "innerWidth": 1280,
+        "clientWidth": 1280,
+        "scrollWidth": 1280,
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepsIndicator": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepDividers": [
+          28,
+          28
+        ]
+      },
+      "review": {
+        "innerWidth": 1280,
+        "clientWidth": 1280,
+        "scrollWidth": 1280,
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepsIndicator": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepDividers": [
+          28,
+          28
+        ]
+      },
+      "receipt": {
+        "innerWidth": 1280,
+        "clientWidth": 1280,
+        "scrollWidth": 1280,
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepsIndicator": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepDividers": [
+          28,
+          28
+        ]
+      }
+    },
+    "mobile_360": {
+      "details": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "card": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepsIndicator": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepDividers": [
+          63.16,
+          63.17
+        ]
+      },
+      "review": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "card": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepsIndicator": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepDividers": [
+          63.16,
+          63.17
+        ]
+      },
+      "receipt": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "card": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepsIndicator": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepDividers": [
+          63.16,
+          63.17
+        ]
+      }
+    }
+  },
+  "edge": {
+    "desktop_1280": {
+      "details": {
+        "innerWidth": 1280,
+        "clientWidth": 1280,
+        "scrollWidth": 1280,
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepsIndicator": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepDividers": [
+          28,
+          28
+        ]
+      },
+      "review": {
+        "innerWidth": 1280,
+        "clientWidth": 1280,
+        "scrollWidth": 1280,
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepsIndicator": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepDividers": [
+          28,
+          28
+        ]
+      },
+      "receipt": {
+        "innerWidth": 1280,
+        "clientWidth": 1280,
+        "scrollWidth": 1280,
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepsIndicator": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "stepDividers": [
+          28,
+          28
+        ]
+      }
+    },
+    "mobile_360": {
+      "details": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "card": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepsIndicator": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepDividers": [
+          63.16,
+          63.17
+        ]
+      },
+      "review": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "card": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepsIndicator": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepDividers": [
+          63.16,
+          63.17
+        ]
+      },
+      "receipt": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "card": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepsIndicator": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepDividers": [
+          63.16,
+          63.17
+        ]
+      }
+    }
+  },
+  "firefox": {
+    "desktop_1280": {
+      "details": {
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "clientWidth": 1280,
+        "innerWidth": 1280,
+        "scrollWidth": 1280,
+        "stepDividers": [
+          28,
+          28
+        ],
+        "stepsIndicator": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        }
+      },
+      "review": {
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "clientWidth": 1280,
+        "innerWidth": 1280,
+        "scrollWidth": 1280,
+        "stepDividers": [
+          28,
+          28
+        ],
+        "stepsIndicator": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        }
+      },
+      "receipt": {
+        "card": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        },
+        "clientWidth": 1280,
+        "innerWidth": 1280,
+        "scrollWidth": 1280,
+        "stepDividers": [
+          28,
+          28
+        ],
+        "stepsIndicator": {
+          "left": 176,
+          "right": 1104,
+          "width": 928
+        }
+      }
+    },
+    "mobile_360": {
+      "details": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "card": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepsIndicator": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepDividers": [
+          63.12,
+          63.12
+        ]
+      },
+      "review": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "card": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepsIndicator": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepDividers": [
+          63.12,
+          63.12
+        ]
+      },
+      "receipt": {
+        "innerWidth": 360,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "card": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepsIndicator": {
+          "left": 10,
+          "right": 350,
+          "width": 340
+        },
+        "stepDividers": [
+          63.12,
+          63.12
+        ]
+      }
+    },
+    "selenium_system_firefox_windows_limitation": {
+      "measured": {
+        "card": {
+          "left": 16,
+          "right": 484,
+          "width": 468
+        },
+        "clientWidth": 500,
+        "innerWidth": 500,
+        "scrollWidth": 500,
+        "stepDividers": [
+          14,
+          14
+        ],
+        "stepsIndicator": {
+          "left": 16,
+          "right": 484,
+          "width": 468
+        }
+      },
+      "limitation": "Windows OS Win32 minimum window tracking size clamps native Firefox top-level window to 500px"
+    }
+  }
+}

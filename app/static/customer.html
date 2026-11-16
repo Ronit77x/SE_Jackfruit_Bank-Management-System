@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bank Management System - My accounts</title>
+  <link rel="stylesheet" href="/ui/css/style.css">
+  <link rel="stylesheet" href="/ui/css/customer.css">
+</head>
+<body>
+  <header id="site-header" class="site"></header>
+  <main>
+    <section class="card" aria-labelledby="accounts-heading">
+      <h2 id="accounts-heading">My accounts</h2>
+      <p class="muted">Choose an account to view its balance, transactions and statements. Account numbers show only the last four digits.</p>
+      <label for="account">Account</label>
+      <select id="account" disabled><option value="">Loading accounts…</option></select>
+      <p id="account-summary" aria-live="polite"></p>
+      <div id="account-message" class="message" role="alert"></div>
+      <div class="actions">
+        <a href="/ui/transfer.html" id="transfer-shortcut" class="button-link">Transfer money →</a>
+      </div>
+      <button id="retry-accounts" class="secondary" hidden>Retry loading accounts</button>
+    </section>
+    <section id="activity" class="card" aria-labelledby="activity-heading" hidden>
+      <h2 id="activity-heading">Transactions and statements</h2>
+      <p class="muted">Latest activity shows up to 10 transactions. Choose both dates for a full, paginated history or a CSV statement. Dates use India Standard Time (IST).</p>
+      <form id="history-form">
+        <div class="row two">
+          <div><label for="date-from">From date</label><input id="date-from" type="date" required></div>
+          <div><label for="date-to">To date</label><input id="date-to" type="date" required></div>
+        </div>
+        <div class="actions">
+          <button id="range-button" type="submit">View date range</button>
+          <button id="latest-button" type="button" class="secondary">Latest 10</button>
+          <button id="download-button" type="button" class="secondary">Download CSV</button>
+        </div>
+      </form>
+      <div id="history-message" class="message" role="alert"></div>
+      <p id="history-summary" role="status" aria-live="polite"></p>
+      <div id="history-results" aria-busy="false">
+        <p class="muted">On a small screen, scroll the table sideways to see all columns.</p>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Transaction table; scroll horizontally on small screens">
+          <table>
+            <caption class="muted">Transactions, newest first. Times are IST.</caption>
+            <thead><tr><th scope="col">Date and time (IST)</th><th scope="col">Type</th><th scope="col" class="num">Amount (Rs)</th><th scope="col" class="num">Balance after (Rs)</th><th scope="col">Receipt / reference</th></tr></thead>
+            <tbody id="history-rows"></tbody>
+          </table>
+        </div>
+        <div class="actions" id="pagination" hidden>
+          <button id="previous-button" type="button" class="secondary">Previous page</button>
+          <button id="next-button" type="button" class="secondary">Next page</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="/ui/js/api.js"></script>
+  <script src="/ui/js/customer.js"></script>
+</body>
+</html>

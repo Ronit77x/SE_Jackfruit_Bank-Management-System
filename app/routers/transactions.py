@@ -10,6 +10,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Query, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy import select
+from app.models import Account
 
 from app.constants import ROLE_CUSTOMER, ROLE_TELLER
 from app.database import get_db
@@ -186,3 +188,44 @@ def statement(
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+def _owned_number(db: Session, account_id: int, user) -> str:
+    """Resolve a list identifier without exposing the full account number to the UI.
+
+    Query ownership together with the ID so absent and other-customer accounts
+    have the same response. Role and temporary-password guards run first.
+    """
+    account = db.scalar(select(Account).where(
+        Account.id == account_id, Account.customer_id == getattr(user, "customer_id", None)
+    )) if getattr(user, "customer_id", None) is not None else None
+    if account is None:
+        raise service.AppError(404, "ACCOUNT_NOT_FOUND", "Account not found.")
+    return account.account_number
+
+
+@router.get("/accounts/by-id/{account_id}/transactions", response_model=HistoryResponse)
+def history_by_id(
+    account_id: Annotated[int, Path(gt=0)],
+    date_from: date | None = Query(default=None, alias="from"),
+    date_to: date | None = Query(default=None, alias="to"),
+    limit: int = Query(default=service.DEFAULT_PAGE_SIZE, ge=1, le=service.MAX_PAGE_SIZE),
+    offset: int = Query(default=0, ge=0),
+    user=Depends(require_roles(ROLE_CUSTOMER)),
+    db: Session = Depends(get_db),
+):
+    """Customer UI history: same pagination and dates, using an owned account ID."""
+    return history(_owned_number(db, account_id, user), date_from, date_to, limit, offset, user, db)
+
+
+@router.get("/accounts/by-id/{account_id}/statement")
+def statement_by_id(
+    account_id: Annotated[int, Path(gt=0)],
+    date_from: date = Query(alias="from"),
+    date_to: date = Query(alias="to"),
+    file_format: str = Query(default="csv", alias="format"),
+    user=Depends(require_roles(ROLE_CUSTOMER)),
+    db: Session = Depends(get_db),
+):
+    """Customer UI CSV; reuses the complete export and mandatory durable audit."""
+    return statement(_owned_number(db, account_id, user), date_from, date_to, file_format, user, db)

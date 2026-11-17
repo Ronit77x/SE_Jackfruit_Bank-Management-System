@@ -109,16 +109,14 @@ and Playwright Firefox/Gecko 153.0 at 360px. The Gecko viewport run is not a
 claim about the installed Firefox 159 desktop binary at a native 360px size.
 Viewport emulation does not establish physical touchscreen compatibility.
 
-PR #61 completes and integrates the US-15 implementation. An implementation-completion closure of issue #13
-records that implementation completion; its tracker state does not establish
-that the remaining verification has passed. Latest-two-browser-version coverage
-and physical touchscreen testing are separate outstanding verification
-activities, retained in the [browser report](test-plan/TC-UX-02-browser-compatibility.md).
-The recorded environment covers only available binaries/engine versions, so
-full BMS-NF-006 version coverage remains **unverified**. The original criterion
-is unchanged; no unsupported `n-1` labels or blanket acceptance claim is made.
-This clarification does not request reopening #13 or changing its completed
-implementation.
+PR #61 completes and integrates the US-15 implementation. Latest-two-browser-
+version coverage and physical touchscreen testing remain incomplete, as
+recorded in the [browser report](test-plan/TC-UX-02-browser-compatibility.md).
+No further compatibility verification is planned for this submission. The
+agreed tracker disposition is **Not planned** for the remaining verification,
+not rejection of the merged implementation. Full BMS-NF-006 version coverage
+remains **unverified**. The original criterion is unchanged; no unsupported
+`n-1` labels or blanket acceptance claim is made.
 
 ### S2-03 — Monthly availability is not demonstrated
 
@@ -133,7 +131,9 @@ The local verification window is shorter than the complete November calendar
 month, and no complete earlier-month log is supplied. Neither a smoke check
 nor the load test proves 99.5% monthly availability. Scheduled-maintenance
 exclusion is also unverified. The monthly target remains **unverified**;
-implementation and measured samples are reported separately. See the
+implementation and measured samples are reported separately. A complete
+monthly evaluation will not be completed for this submission; the agreed
+tracker disposition is **Not planned** for the remaining verification. See the
 [monitoring instructions](test-plan/uptime-monitoring.md).
 
 ### S2-04 — Statement format clarification
@@ -179,15 +179,25 @@ and monthly availability are outside this evidence.
 ## Submission and issue disposition
 
 - Issue #15 may be closed as **Completed**, linking the merged benchmark.
-- If the team closes #12 because no further recruitment is planned, use
-  **Not planned**, explain the implemented functionality and unmet acceptance,
-  and link this record after review. Do not mark all criteria passed.
-- Issue #13 may be closed for the implementation integrated through #61.
-  Latest-two-browser-version and physical touchscreen verification remain
-  outstanding in the browser report and this record; implementation closure
-  does not claim those activities passed. No reopening is requested here.
-- Issue #23's monthly target and #36's final release are not completed by this
-  document. Keep their outstanding criteria visible.
+- **Agreed issue disposition, 17 November 2026:** Ronit will close issues
+  **#12, #13 and #23 as Not planned** because their remaining acceptance
+  verification will not be completed for this submission. This records the
+  team's closure decision, not confirmation that the tracker actions have
+  already occurred.
+- **#12 / US-14:** transfer implementation is merged through PR #60; the
+  five-first-time-user trial and formal BMS-NF-004 acceptance remain unmet /
+  unverified (S2-01).
+- **#13 / US-15:** implementation is merged through PR #61; latest-two-version
+  browser coverage and physical touchscreen verification remain incomplete
+  (S2-02). Closure does not assert full BMS-NF-006 acceptance.
+- **#23 / US-30:** the health endpoint and monitoring tools are merged through
+  PRs #54 and #82; 99.5% monthly availability and maintenance-exclusion
+  verification remain unverified (S2-03).
+- Keep unmet acceptance checkboxes unchecked. Not-planned closure ends the
+  remaining evaluation work for this submission; it does not establish a
+  passing result or an assessor waiver.
+- **#36 / US-07 remains open** until final documentation, artifact links and
+  the release baseline are reviewed and integrated.
 - PR #45 requires normal team review. Approval acknowledges accurate reporting,
   not an external waiver of SRS acceptance criteria.
 - Final release notes link this record and the actual video artifacts and

@@ -72,7 +72,9 @@ pip install -r requirements.txt
 
 ### 4. Configure the sensitive-data encryption key
 
-The application reads `BMS_DATA_KEY` from the process environment. It does **not** automatically load a `.env` file. Generate a new key and keep it private; do not commit it to the repository.
+The application reads `BMS_DATA_KEY` from the process environment. It does **not** automatically load a `.env` file. Never commit the key to the repository.
+
+**For a fresh database:** Generate a new Fernet key once, set it in the environment before starting the application, and keep it safe. Continue using that same key whenever you access data encrypted in this database.
 
 Windows CMD (run in the same terminal before starting the application):
 
@@ -86,7 +88,21 @@ Linux/macOS:
 export BMS_DATA_KEY="$(python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")"
 ```
 
-Keep the generated key safe. Data encrypted with one key cannot be decrypted using a different key.
+**For an existing database:** Do **not** generate a new key. Set the exact original `BMS_DATA_KEY` that was used to encrypt that database's KYC values.
+
+Windows CMD:
+
+```cmd
+set BMS_DATA_KEY=YOUR_EXISTING_KEY
+```
+
+Linux/macOS:
+
+```bash
+export BMS_DATA_KEY="YOUR_EXISTING_KEY"
+```
+
+A different key cannot decrypt existing ciphertext. If the original key is lost, the encrypted values cannot be recovered from the database alone.
 
 ### 5. Optional demo data
 

@@ -58,3 +58,5 @@ tests/          Automated tests
 ## Sprint demos
 
 - [Sprint 1 demo video](docs/demo/sprint1-demo.mp4) (47 seconds, silent): deposit, withdrawal, minimum-balance rejection, transfer, Teller creation, and the passing pytest summary.
+
+- [Sprint 2 demo video](docs/demo/sprint2-demo.mp4), recorded by Vaibhava L. (Member 4), added on 17 November 2026. See the [demo record](docs/demo/sprint-2-demo-runbook.md) for demonstrated workflows and verification limits.

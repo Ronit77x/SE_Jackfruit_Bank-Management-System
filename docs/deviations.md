@@ -29,10 +29,10 @@ not a separate project deliverable or recording credit.
 
 The [Sprint 2 demo record](demo/sprint-2-demo-runbook.md) was merged separately
 from the video. The received MP4 has been copied without re-encoding to
-`docs/demo/sprint2-demo.mp4` in the separate `docs/publish-sprint2-demo` branch,
-with README and demo-record links, prepared on **17 November 2026**. The video
-artifact must be merged before the final release references it as available on
-main. Its measured duration is **270.90 seconds (4 minutes 31 seconds)**,
+`docs/demo/sprint2-demo.mp4` in PR #85, with README and demo-record links,
+prepared on **17 November 2026**. The video artifact must be merged before the
+final release references it as available on main. Its measured duration is
+**270.90 seconds (4 minutes 31 seconds)**,
 exceeding the assignment's two-minute Sprint 2 video length. This is a
 presentation deviation; no assessor waiver is claimed.
 
@@ -45,7 +45,7 @@ demonstrating the integrated application. This explains the observed work and
 delay without blaming an individual or inventing an external event. Late
 delivery remains a schedule deviation.
 
-Final documentation/release review is tracked in PR #68 (US-07, issue #36).
+Final documentation/release review is tracked in PR #84 (US-07, issue #36).
 Use the release documentation for actual demonstration dates and published
 video artifact links; this deviations log records delivery and scope decisions.
 The Part-2 assignment also requires deviations to be documented and explained

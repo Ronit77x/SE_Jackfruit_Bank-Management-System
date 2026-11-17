@@ -97,7 +97,7 @@ pytest -v
 - Sprint 1 demo video: [Watch Sprint 1 demo](../demo/sprint1-demo.mp4).
 - Sprint 2 demo video: [`docs/demo/sprint2-demo.mp4`](../demo/sprint2-demo.mp4), recorded by Vaibhava L. (Member 4), present in the repository. The measured duration is **270.90 seconds (4 minutes 31 seconds)**, exceeding the assignment's two-minute requirement; no assessor waiver is claimed.
 - **Usability verification:** The minimum first-time-user usability sample was not met.
-- **Browser coverage:** Cross-browser verification remains partial.
+- **Browser coverage:** Cross-browser verification remains partial. Testing against the latest two versions of supported browsers has not been completed, and physical touchscreen testing remains incomplete.
 - **Monthly availability:** Monthly availability requirements have not yet been demonstrated.
 - The complete [deviations and delivery-status log](../deviations.md) documents Sprint 1 and Sprint 2 implementation choices, delivery deviations, and incomplete acceptance criteria.
 - Final integrated verification: pending.

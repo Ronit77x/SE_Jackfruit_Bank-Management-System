@@ -1,7 +1,9 @@
 # Deviations and delivery status: Sprint 1 and Sprint 2
 
-Updated: **16 November 2026**. Evidence baseline: main
-`ed030a7716130df305e121ffb3cd6c788ea49d9f` after PR #65.
+Updated: **17 November 2026**. Evidence baseline: main
+`f3551eca0bf3285b514fc0d67cfc5bc9a7c783a8` after PR #83. The application
+and benchmark evidence remain those reviewed after PR #65; PR #83 adds the
+Sprint 2 demo record.
 
 This record distinguishes implementation choices, late deliverables and unmet
 or incompletely verified acceptance criteria. Recording a limitation does not
@@ -17,11 +19,22 @@ windows do not revise or extend the assignment dates. Both planning records
 are distinguished here so the overrun is measured against the submitted
 assignment rather than silently replacing its deadlines.
 
-Integration, corrective reviews, verification and demonstration preparation
-continued during **14–16 November 2026**, beyond the planned windows. Sprint 1
-demonstration evidence is committed through PR #74. The Sprint 2 recording
-owner is **Vaibhava L. (Member 4)**; Ronit handles repository publication and
-merges.
+Integration, corrective reviews, verification and demonstration work continued
+through **17 November 2026**, beyond the planned windows. Sprint 1 demonstration
+evidence is committed through PR #74. Vaibhava L. (Member 4) recorded the
+Sprint 2 demonstration on **16 November 2026**; its documentation was integrated
+through [PR #83](https://github.com/SEMiniProjectBMS/SE_Jackfruit_Bank-Management-System/pull/83)
+on **17 November 2026**. Ronit reviewed and merged that PR. This merge role is
+not a separate project deliverable or recording credit.
+
+The [Sprint 2 demo record](demo/sprint-2-demo-runbook.md) identifies the edited
+artifact as `BMS_Sprint2_Demo_Final_Edited.mp4`, approximately **4 minutes
+31 seconds** long. This exceeds the assignment's two-minute Sprint 2 video
+length and is recorded as a presentation deviation; no assessor waiver is
+claimed. PR #83 contains the Markdown record, not the MP4. At this baseline,
+that record supplies no public video URL, so merging it alone does not establish
+that the video artifact is accessible in the submission. Final release
+references must identify the actual accessible artifact.
 
 The delivery overrun occurred while dependent branches were integrated, review
 findings were resolved, and shared authentication, role-specific UI and
@@ -42,7 +55,7 @@ concise on-screen text can communicate the limitations in a silent recording.
 ## Sprint 1 implementation and presentation deviations
 
 The original four entries were recorded on 22 October 2026; their current
-disposition below was reviewed on 16 November 2026. The resolved withdrawal-day
+disposition below was reviewed on 17 November 2026. The resolved withdrawal-day
 entry additionally preserves the historical deviation and its correction.
 
 | ID | Story / baseline | Observed implementation or presentation | Reason and current disposition |
@@ -51,7 +64,7 @@ entry additionally preserves the historical deviation and its correction.
 | S1-02 | US-17/18/19; SAD §4.3 account identifiers | Deposit/withdrawal `accountId` and transfer `fromAccount`/`toAccount` are ten-digit account-number strings, not internal database IDs. | Clarifies the identifier used for transactions. Owned-account history separately supports internal IDs without changing these payloads. |
 | S1-03 | US-17/18/19; SAD §§4.3–4.4 error lists | Explicit outcomes include HTTP 404 `ACCOUNT_NOT_FOUND`, HTTP 400 `VALIDATION_ERROR`, and HTTP 400 `INVALID_TRANSFER` for same-account transfers. The standard response also contains a compatibility `detail` field. | Endpoint error lists were not exhaustive. The response retains `code`, `message`, `timestamp` and `traceId`, with understandable rejection messages and existing client compatibility. |
 | S1-04 | US-17/18/19; SAD §4.3 monetary responses | Monetary values are decimal strings such as `"1500.00"`, rather than binary floating-point JSON numbers. | Preserves exact paise in transport. This representation choice does not relax transaction integrity. |
-| S1-05 (resolved) | US-18; BR-02 daily withdrawal limit | The initial implementation counted daily withdrawals from UTC midnight rather than the bank's IST calendar-day boundary. | Corrected on **25 October 2026** in commit [`b31eb6d`](https://github.com/Ronit77x/SE_Jackfruit_Bank-Management-System/commit/b31eb6de13bcf21e1973ca23f59baeb0b63f7a18), included in [PR #43](https://github.com/Ronit77x/SE_Jackfruit_Bank-Management-System/pull/43), merged on 30 October 2026. IST midnight (UTC+05:30) is converted to UTC for the database query; dedicated IST-boundary regression tests verify BR-02 behavior. This historical deviation is resolved, not an outstanding limitation. |
+| S1-05 (resolved) | US-18; BR-02 daily withdrawal limit | The initial implementation counted daily withdrawals from UTC midnight rather than the bank's IST calendar-day boundary. | Corrected on **25 October 2026** in commit [`b31eb6d`](https://github.com/SEMiniProjectBMS/SE_Jackfruit_Bank-Management-System/commit/b31eb6de13bcf21e1973ca23f59baeb0b63f7a18), included in [PR #43](https://github.com/SEMiniProjectBMS/SE_Jackfruit_Bank-Management-System/pull/43), merged on 30 October 2026. IST midnight (UTC+05:30) is converted to UTC for the database query; dedicated IST-boundary regression tests verify BR-02 behavior. This historical deviation is resolved, not an outstanding limitation. |
 
 ## Sprint 2 acceptance deviations and verification limits
 
@@ -96,8 +109,9 @@ and Playwright Firefox/Gecko 153.0 at 360px. The Gecko viewport run is not a
 claim about the installed Firefox 159 desktop binary at a native 360px size.
 Viewport emulation does not establish physical touchscreen compatibility.
 
-PR #61 completes and integrates the US-15 implementation. Closure of issue #13
-records that implementation completion. Latest-two-browser-version coverage
+PR #61 completes and integrates the US-15 implementation. An implementation-completion closure of issue #13
+records that implementation completion; its tracker state does not establish
+that the remaining verification has passed. Latest-two-browser-version coverage
 and physical touchscreen testing are separate outstanding verification
 activities, retained in the [browser report](test-plan/TC-UX-02-browser-compatibility.md).
 The recorded environment covers only available binaries/engine versions, so
@@ -168,7 +182,7 @@ and monthly availability are outside this evidence.
 - If the team closes #12 because no further recruitment is planned, use
   **Not planned**, explain the implemented functionality and unmet acceptance,
   and link this record after review. Do not mark all criteria passed.
-- Issue #13 may remain closed for the implementation integrated through #61.
+- Issue #13 may be closed for the implementation integrated through #61.
   Latest-two-browser-version and physical touchscreen verification remain
   outstanding in the browser report and this record; implementation closure
   does not claim those activities passed. No reopening is requested here.

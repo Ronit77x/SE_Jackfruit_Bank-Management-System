@@ -28,10 +28,9 @@ on **17 November 2026**. Ronit reviewed and merged that PR. This merge role is
 not a separate project deliverable or recording credit.
 
 The [Sprint 2 demo record](demo/sprint-2-demo-runbook.md) was merged separately
-from the video. The received MP4 has been copied without re-encoding to
-`docs/demo/sprint2-demo.mp4` in PR #85, with README and demo-record links,
-prepared on **17 November 2026**. The video artifact must be merged before the
-final release references it as available on main. Its measured duration is
+from the video. The MP4 is available at
+[docs/demo/sprint2-demo.mp4](demo/sprint2-demo.mp4), integrated through PR #85
+on 17 November 2026, with README and demo-record links. Its measured duration is
 **270.90 seconds (4 minutes 31 seconds)**,
 exceeding the assignment's two-minute Sprint 2 video length. This is a
 presentation deviation; no assessor waiver is claimed.
@@ -179,11 +178,9 @@ and monthly availability are outside this evidence.
 ## Submission and issue disposition
 
 - Issue #15 may be closed as **Completed**, linking the merged benchmark.
-- **Agreed issue disposition, 17 November 2026:** Ronit will close issues
+- **Agreed issue disposition, 17 November 2026:** Ronit closed issues
   **#12, #13 and #23 as Not planned** because their remaining acceptance
-  verification will not be completed for this submission. This records the
-  team's closure decision, not confirmation that the tracker actions have
-  already occurred.
+  verification will not be completed for this submission. The tracker closures were verified on 17 November 2026.
 - **#12 / US-14:** transfer implementation is merged through PR #60; the
   five-first-time-user trial and formal BMS-NF-004 acceptance remain unmet /
   unverified (S2-01).
@@ -196,9 +193,10 @@ and monthly availability are outside this evidence.
 - Keep unmet acceptance checkboxes unchecked. Not-planned closure ends the
   remaining evaluation work for this submission; it does not establish a
   passing result or an assessor waiver.
-- **#36 / US-07 remains open** until final documentation, artifact links and
-  the release baseline are reviewed and integrated.
-- PR #45 requires normal team review. Approval acknowledges accurate reporting,
+- **#36 / US-07:** PR #84 is merged; team agreement is confirmed by Ronit.
+  Close as Completed after the final verification documentation merges and
+  main CI passes. See the [verification record](release/FINAL_VERIFICATION_2026-11-17.md).
+- PR #45 was reviewed and merged. Approval acknowledges accurate reporting,
   not an external waiver of SRS acceptance criteria.
 - Final release notes link this record and the actual video artifacts and
   dates, retaining unresolved verification limitations.

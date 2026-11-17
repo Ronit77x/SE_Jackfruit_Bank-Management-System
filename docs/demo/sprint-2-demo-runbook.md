@@ -85,11 +85,11 @@ evidence, not a new GitHub Actions result or a claim that CI was rerun.
 
 ## Outstanding acceptance and release limitations
 
-- **Issue #12 / US-14 usability:** remains open. Five genuine first-time
+- **Issue #12 / US-14 usability:** closed as Not planned for remaining verification. Five genuine first-time
   participants are required; zero completed human trials are recorded. The
   implemented transfer workflow and automated checks do not satisfy that human
   usability criterion. No pass rate or waiver is claimed.
-- **Issue #13 / US-15 browser compatibility:** is open and has been reopened.
+- **Issue #13 / US-15 browser compatibility:** closed as Not planned for remaining verification.
   Latest-two-version browser verification and physical touchscreen testing
   remain outstanding. Merged implementation PR #61 does not make every
   acceptance criterion complete.
@@ -100,12 +100,12 @@ evidence, not a new GitHub Actions result or a claim that CI was rerun.
 - Retention-period and backup/disaster-recovery verification remain
   outstanding.
 
-PR #45 (deviations documentation), PR #68 (final documentation/release freeze)
-and PR #84 (release readiness documentation) remain open. The completed demo
-record should now be referenced in the release documentation. The team has not
-identified #68 or #84 as the authoritative final documentation PR in this
-record; the team should decide that during review. This runbook does not merge,
-close or otherwise change those PRs.
+PR #45 (deviations), PR #84 (US-07 documentation) and PR #85 (video artifact)
+are merged. PR #68 was superseded; #84 is the authoritative US-07 documentation
+PR. The final [verification record](../release/FINAL_VERIFICATION_2026-11-17.md)
+records the tested baseline and team agreement. These administrative updates
+do not change the recording's historical test evidence or the unverified
+acceptance criteria above.
 
 ## Release reference
 

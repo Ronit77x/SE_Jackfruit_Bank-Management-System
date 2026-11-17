@@ -25,13 +25,13 @@ A web-based **Bank Management System (BMS)** for a single bank, with three roles
 
 | Document | Location | Current note |
 |---|---|---|
-| Software Requirements Specification | `docs/srs/` | Integrated v1.0 files are present; team approval is pending |
+| Software Requirements Specification | `docs/srs/` | Integrated v1.0 files reviewed as part of the agreed submission baseline |
 | Software Architecture and Design | `docs/sad/` | v1.0 DOCX and PDF are present |
 | Test Plan | `docs/test-plan/` | v1.0 DOCX and supporting evidence are present |
 | UML diagrams | `docs/diagrams/` | PlantUML sources and rendered diagrams are present |
 | Sprint plan and backlog coverage | `docs/backlog/` | Planning and coverage records; live backlog acceptance remains a team check |
 | Deviations log | `docs/deviations.md` | Sprint 1 and Sprint 2 deviations, delivery status and acceptance limitations are documented |
-| Release notes | `docs/release/RELEASE_NOTES_v1.0.0.md` | Candidate baseline; release acceptance remains pending |
+| Release notes | `docs/release/RELEASE_NOTES_v1.0.0.md` | Agreed submission baseline; final verification evidence is linked below |
 
 ## Application setup
 
@@ -162,7 +162,7 @@ The `transactions` model contains `id`, `account_id`, `type`, `amount`, `balance
 
 - [Sprint 1 demo video](docs/demo/sprint1-demo.mp4)
 - [Sprint 2 demo video](docs/demo/sprint2-demo.mp4), recorded by Vaibhava L. (Member 4). See the [demo record](docs/demo/sprint-2-demo-runbook.md) for the demonstrated workflows and verification limits.
-- Release candidate: `v1.0.0-rc` (candidate label only; not a final release).
-- Final release freeze, final integrated verification and four-member acceptance/sign-off remain **pending**.
+- Submission baseline: `754d03c6d86927e490438ff7286c76f8258a2a12`, agreed by the team on 17 November 2026. No Git tag is implied.
+- Team agreement confirmed by Ronit on 17 November 2026. Application scope is frozen; this final documentation update records verification and does not change application code.
 
-The final release must not be declared complete until the team has reviewed the integrated implementation, recorded the final verification evidence, completed the Sprint 2 demonstration and approved the release baseline.
+See the [final verification record](docs/release/FINAL_VERIFICATION_2026-11-17.md) for exact test results, main CI, smoke checks and remaining acceptance limitations. Merge and CI validation of this documentation PR complete the release-record publication step.

@@ -27,14 +27,14 @@ through [PR #83](https://github.com/SEMiniProjectBMS/SE_Jackfruit_Bank-Managemen
 on **17 November 2026**. Ronit reviewed and merged that PR. This merge role is
 not a separate project deliverable or recording credit.
 
-The [Sprint 2 demo record](demo/sprint-2-demo-runbook.md) identifies the edited
-artifact as `BMS_Sprint2_Demo_Final_Edited.mp4`, approximately **4 minutes
-31 seconds** long. This exceeds the assignment's two-minute Sprint 2 video
-length and is recorded as a presentation deviation; no assessor waiver is
-claimed. PR #83 contains the Markdown record, not the MP4. At this baseline,
-that record supplies no public video URL, so merging it alone does not establish
-that the video artifact is accessible in the submission. Final release
-references must identify the actual accessible artifact.
+The [Sprint 2 demo record](demo/sprint-2-demo-runbook.md) was merged separately
+from the video. The received MP4 has been copied without re-encoding to
+`docs/demo/sprint2-demo.mp4` in the separate `docs/publish-sprint2-demo` branch,
+with README and demo-record links, prepared on **17 November 2026**. The video
+artifact must be merged before the final release references it as available on
+main. Its measured duration is **270.90 seconds (4 minutes 31 seconds)**,
+exceeding the assignment's two-minute Sprint 2 video length. This is a
+presentation deviation; no assessor waiver is claimed.
 
 The delivery overrun occurred while dependent branches were integrated, review
 findings were resolved, and shared authentication, role-specific UI and

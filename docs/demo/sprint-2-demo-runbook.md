@@ -9,17 +9,17 @@ encryption keys or private local paths are part of this record.
 
 - **Recording owner:** Vaibhava L. (Member 4)
 - **Recording date:** 16 November 2026
-- **Edited artifact:** `BMS_Sprint2_Demo_Final_Edited.mp4`
-- **Publication owner:** Ronit
-- **Publication status:** Pending Ronit's publication
-- **Published URL:** Not available yet
+- **Repository artifact:** [sprint2-demo.mp4](sprint2-demo.mp4)
+- **Added to the submission branch:** 17 November 2026
+- **Repository upload and PR merge coordination:** Ronit
 
-The edited video is approximately 4 minutes 31 seconds long, slightly above the
-four-minute target. It is an H.264 video at
-1838×1630. The verified local file size is 13,328,429 bytes. The available
-macOS metadata identifies it as video-only; no audio stream is reported. The
-file remains in Downloads and is not committed to Git. The source recordings
-remain preserved separately.
+The repository copy is named `sprint2-demo.mp4`. Its size is **13,322,370
+bytes** and its MP4 container duration is approximately **270.90 seconds**
+(4 minutes 31 seconds). The received file was copied without re-encoding;
+its SHA-256 is `06ba4731df487dca24202f3aa1f3a42196c26df70b1061bd651b7345efc67966`.
+This is longer than the assignment's two-minute Sprint 2 video length; no
+assessor waiver is claimed. Recording credit remains with Vaibhava L.
+The source file is preserved separately.
 
 ## Demonstrated workflows
 
@@ -107,9 +107,9 @@ identified #68 or #84 as the authoritative final documentation PR in this
 record; the team should decide that during review. This runbook does not merge,
 close or otherwise change those PRs.
 
-## Follow-up
+## Release reference
 
-Ronit should publish the edited artifact and provide the actual public URL.
-After that URL is available, update the README and release documentation with
-the verified publication reference and status. Until then, no public URL is
-claimed and no local Downloads path should be used as one.
+The video is included alongside this record as [sprint2-demo.mp4](sprint2-demo.mp4)
+and linked from the main README. The final release documentation should retain
+that artifact link and the outstanding verification limitations above. Adding
+the recording does not establish acceptance of the unverified requirements.

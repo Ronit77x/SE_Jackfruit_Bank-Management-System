@@ -145,7 +145,7 @@ The `transactions` model contains `id`, `account_id`, `type`, `amount`, `balance
 ## Sprint demos and release status
 
 - Sprint 1 demo: `docs/demo/sprint1-demo.mp4`
-- Sprint 2 demo recording: pending final recording/publication.
+- Sprint 2 demo recording: complete and available at [`docs/demo/sprint2-demo.mp4`](docs/demo/sprint2-demo.mp4), recorded by Vaibhava L. (Member 4). See the [demo record](docs/demo/sprint-2-demo-runbook.md) for the demonstrated workflows and verification limits.
 - Release candidate: `v1.0.0-rc` (candidate label only; not a final release).
 - Final release freeze, final integrated verification and four-member acceptance/sign-off remain **pending**.
 

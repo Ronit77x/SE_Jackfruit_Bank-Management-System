@@ -28,7 +28,7 @@ def git(*args):
     return subprocess.check_output(["git", *args], cwd=ROOT)
 
 
-def run(output, port, baseline_ref):
+def run(output, port, baseline_ref, configurations, repeats):
     with socket.socket() as probe_socket:
         probe_socket.bind(("127.0.0.1", port))
     output.mkdir(parents=True, exist_ok=False)
@@ -45,11 +45,14 @@ def run(output, port, baseline_ref):
                 "updated_database_sha256": hashlib.sha256((snapshot / "app/database.py").read_bytes()).hexdigest(),
                 "platform": platform.platform(), "processor": platform.processor(),
                 "logical_cpus": os.cpu_count(), "python": sys.version,
-                "users": 50, "spawn_rate": 10, "duration_seconds": 120, "runs": []}
+                "users": 50, "spawn_rate": 10, "duration_seconds": 120,
+                "configuration_labels": configurations, "repeats": repeats, "runs": []}
     (output / "requirements-freeze.txt").write_bytes(
         subprocess.check_output([sys.executable, "-m", "pip", "freeze"]))
-    for repeat in range(1, 4):
+    for repeat in range(1, repeats + 1):
         for label, size, overflow in [("R0", 5, 10), ("R1", 40, 10), ("R2", 50, 50), ("R3", 5, 10)]:
+            if label not in configurations:
+                continue
             name = f"{label}-{repeat}"
             folder = output / name
             source = folder / "source"
@@ -62,7 +65,8 @@ def run(output, port, baseline_ref):
             env.update(BMS_DATABASE_URL=f"sqlite:///{(folder / 'benchmark.db').as_posix()}",
                        BMS_DATA_KEY=Fernet.generate_key().decode(), BMS_DB_POOL_SIZE=str(size),
                        BMS_DB_MAX_OVERFLOW=str(overflow),
-                       BMS_LOAD_LOGIN_COUNTS=str(folder / "logins.json"), PYTHONIOENCODING="utf-8")
+                       BMS_LOAD_LOGIN_COUNTS=str(folder / "logins.json"),
+                       BMS_LOAD_FINAL_CSV=str(folder / "final"), PYTHONIOENCODING="utf-8")
             print(f"START {name}", flush=True)
             with (folder / "seed.log").open("w", encoding="utf-8") as log:
                 subprocess.run([sys.executable, "-B", "-m", "scripts.seed"], cwd=source,
@@ -102,11 +106,13 @@ def run(output, port, baseline_ref):
                     server.terminate()
                     server.wait(timeout=20)
             counts = json.loads((folder / "logins.json").read_text())
-            with (folder / "load_stats.csv").open(newline="", encoding="utf-8") as stream:
+            with (folder / "final_stats.csv").open(newline="", encoding="utf-8") as stream:
                 stats = next(row for row in csv.DictReader(stream) if row["Name"] == "Aggregated")
             row = {"run": name, "configuration": actual, "logins": counts,
                    "locust_exit_code": result.returncode, "elapsed_seconds": elapsed, "statistics": stats,
-                   "queuepool_timeouts": (folder / "server.log").read_text().count("sqlalchemy.exc.TimeoutError")}
+                   "queuepool_timeouts": (folder / "server.log").read_text().count("sqlalchemy.exc.TimeoutError"),
+                   "statistics_file": "final_stats.csv",
+                   "statistics_capture": "Locust quit event after all users stop; periodic CSV retained separately"}
             manifest["runs"].append(row)
             (output / "results.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
             print(f"DONE {name}: requests={stats['Request Count']} failures={stats['Failure Count']} p95={stats['95%']}ms logins={counts}", flush=True)
@@ -120,5 +126,9 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=8770)
     parser.add_argument("--baseline", default="380edd9037f3d1b61a018978c552a56739664b22",
                         help="Commit containing the original database module")
+    parser.add_argument("--configurations", nargs="+", choices=("R0", "R1", "R2", "R3"),
+                        default=["R0", "R1", "R2", "R3"],
+                        help="Use R3 alone to validate the integrated default configuration")
+    parser.add_argument("--repeats", type=int, choices=range(1, 11), default=3)
     args = parser.parse_args()
-    run(args.output.resolve(), args.port, args.baseline)
+    run(args.output.resolve(), args.port, args.baseline, args.configurations, args.repeats)

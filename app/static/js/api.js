@@ -176,7 +176,7 @@
       host.appendChild(bms.el("h1", "Bank Management System - " + title));
       var nav = bms.el("nav");
       var links = {
-        Customer: [["customer.html", "My accounts"], ["change-password.html", "Change password"]],
+        Customer: [["customer.html", "My accounts"], ["transfer.html", "Transfer money"], ["change-password.html", "Change password"]],
         Teller: [["teller-accounts.html", "Accounts"], ["teller-cash.html", "Cash"], ["change-password.html", "Change password"]],
         Admin: [["admin.html", "Administration"], ["change-password.html", "Change password"]]
       }[bms.role()] || [];

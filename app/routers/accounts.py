@@ -1,14 +1,16 @@
 """Account and customer endpoints.
 
-Owner: Member 2 (Vijay). Stories: US-08, US-09, US-10, US-12, US-13.
+Owner: Member 2 (Vijay). Stories: US-08, US-09, US-10, US-12, US-13, US-14.
 """
 
 import re
 from datetime import date, datetime
 from decimal import Decimal
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import HTMLResponse
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -38,6 +40,7 @@ from app.errors import AppError
 from app.models import Account, User
 from app.security import mask_account_number
 from app.services.account_service import (
+    get_customer_accounts,
     open_account,
     update_account_status,
     update_customer_details,
@@ -452,3 +455,70 @@ def search_customers_endpoint(
             )
         )
     return results
+
+
+# ---------------------------------------------------------------------------
+# US-14: Fund Transfer Account Summary & UI Endpoints (BMS-NF-004)
+# ---------------------------------------------------------------------------
+
+STATIC_TRANSFER_HTML = Path(__file__).resolve().parent.parent / "static" / "transfer.html"
+FRONTEND_TRANSFER_HTML = Path(__file__).resolve().parent.parent.parent / "frontend" / "transfer.html"
+
+
+class CustomerAccountSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    accountNumber: str
+    maskedAccountNumber: str
+    type: str
+    status: str
+    balance: Decimal
+
+
+@router.get(
+    "/accounts/me",
+    response_model=list[CustomerAccountSummary],
+    status_code=status.HTTP_200_OK,
+    tags=["accounts"],
+)
+@router.get(
+    "/accounts/my-accounts",
+    response_model=list[CustomerAccountSummary],
+    status_code=status.HTTP_200_OK,
+    tags=["accounts"],
+)
+def list_my_accounts(
+    user: Annotated[User, Depends(require_roles(ROLE_CUSTOMER))],
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Retrieve accounts owned by the authenticated customer for fund transfer (BMS-NF-004, US-14)."""
+    if not user.customer_id:
+        return []
+
+    accounts = get_customer_accounts(db, user.customer_id)
+    return [
+        CustomerAccountSummary(
+            id=acc.id,
+            accountNumber=acc.account_number,
+            maskedAccountNumber=mask_account_number(acc.account_number),
+            type=acc.type,
+            status=acc.status,
+            balance=acc.balance,
+        )
+        for acc in accounts
+    ]
+
+
+@router.get("/transfer", response_class=HTMLResponse, tags=["ui"])
+@router.get("/transfer-ui", response_class=HTMLResponse, tags=["ui"])
+def get_transfer_ui():
+    """Serve the customer fund transfer web interface (BMS-NF-004, TC-UX-01)."""
+    target = STATIC_TRANSFER_HTML if STATIC_TRANSFER_HTML.exists() else FRONTEND_TRANSFER_HTML
+    if target.exists():
+        content = target.read_text(encoding="utf-8")
+        return HTMLResponse(content=content, status_code=status.HTTP_200_OK)
+    return HTMLResponse(
+        content="<h1>Transfer UI not found</h1>",
+        status_code=status.HTTP_404_NOT_FOUND,
+    )

@@ -63,7 +63,8 @@ pytest -v
 - Transfers are internal to the bank; external NEFT/RTGS/IMPS gateway integration is outside the implemented scope.
 - `/health` does not perform a database connectivity check.
 - Sprint 1 demo: `docs/demo/sprint1-demo.mp4`.
-- Sprint 2 demo recording and final verification evidence: pending.
+- Sprint 2 demo video: [`docs/demo/sprint2-demo.mp4`](../demo/sprint2-demo.mp4), recorded by Vaibhava L. (Member 4), present in the repository. The measured duration is **270.90 seconds (4 minutes 31 seconds)**, exceeding the assignment's two-minute requirement; no assessor waiver is claimed.
+- Final integrated verification: pending.
 - Final release freeze and four-member acceptance/sign-off: pending.
 
 ## 7. Release decision

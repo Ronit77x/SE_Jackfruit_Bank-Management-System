@@ -1,0 +1,80 @@
+{
+  "source_commit": "2a29889703e839f015c3152e7844f7d1509026f7",
+  "baseline_commit": "380edd9037f3d1b61a018978c552a56739664b22",
+  "baseline_database_sha256": "45eaa0ca341d0814ed69932d82ea0cf0643df86a4fb56c2ab2dd821bc7f66fc7",
+  "updated_database_sha256": "6ae35883d8bb204c0e007783485db70acd5a0b73bf4e9b26d147f96dae45115f",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "logical_cpus": 32,
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "users": 50,
+  "spawn_rate": 10,
+  "duration_seconds": 120,
+  "configuration_labels": [
+    "R3"
+  ],
+  "repeats": 1,
+  "runs": [
+    {
+      "run": "R3-1",
+      "configuration": {
+        "journal_mode": "wal",
+        "busy_timeout": 30000,
+        "pool_size": 5,
+        "max_overflow": 10
+      },
+      "logins": {
+        "successful": 50,
+        "failed": 0
+      },
+      "locust_exit_code": 0,
+      "elapsed_seconds": 121.57,
+      "statistics": {
+        "Type": "",
+        "Name": "Aggregated",
+        "Request Count": "8569",
+        "Failure Count": "0",
+        "Median Response Time": "23",
+        "Average Response Time": "38.61903433292657",
+        "Min Response Time": "8.022299996810034",
+        "Max Response Time": "2670.8601000136696",
+        "Average Content Size": "83.70078188820166",
+        "Requests/s": "71.45182013055708",
+        "Failures/s": "0.0",
+        "50%": "23",
+        "66%": "30",
+        "75%": "34",
+        "80%": "37",
+        "90%": "47",
+        "95%": "61",
+        "98%": "88",
+        "99%": "300",
+        "99.9%": "1900",
+        "99.99%": "2700",
+        "100%": "2700"
+      },
+      "queuepool_timeouts": 0,
+      "statistics_file": "final_stats.csv",
+      "statistics_capture": "Locust quit event after all users stop; periodic CSV retained separately"
+    }
+  ],
+  "integrated_main_commit": "f5eff882878c6f6a5cc546910bdbb8c3e22ab5cd",
+  "application_git_tree": "8d106e1f7c4a5336c557254689d8a23ad6b1419c",
+  "started_utc": "2026-11-16T12:15:25.119509+00:00",
+  "started_ist": "2026-11-16T17:45:25.119509+05:30",
+  "peak_recorded_users": 50,
+  "application_matches_integrated_main": true,
+  "statistics_capture": "Final Locust quit export after runner.quit; periodic snapshot retained separately",
+  "artifact_sha256": {
+    "load-test-ledger-check.json": "deff04e497dc8424913bf9900c8ab28c4af442c53b61d879c512fd3d61aa4977",
+    "load-test-locust.log": "66b095c1c3026de665685cb2beb525acf0ea79529fa8a7c5fcba075cb907cb29",
+    "load-test-requirements.txt": "a691fc81f4481f89cea09e2105baacc3bf7c35ac83f02edc111544540e34c7c9",
+    "load-test-server.log": "fe18094ed186bb4b602ed0066d795cfd4bf94c8e2720c240fd220883273ea38e",
+    "load-test_exceptions.csv": "6dba11106e7eb84c71d85b91cb592276309d8b2d485ba6ea8e82da18e6ed7663",
+    "load-test_failures.csv": "48ea7dc61427abba01680829dd9fb55b50a69604f28ae3139e85d888b289349b",
+    "load-test_periodic-stats.csv": "ed2e127e5691c62404399db1c59c6a01ad5d8b667691a9e2ed3a33f015d2e7f1",
+    "load-test_stats.csv": "7bd7515d9cb9f8926956d595557945a9c1eccd90ffabb36594dabb1f02098c78",
+    "load-test_stats_history.csv": "c6cd5c906f424679a70f1f30cfce0123299a2f1fca4eb78d9cb8bdddda4b441c"
+  },
+  "artifact_hash_format": "SHA-256 of committed Git blob bytes; text uses LF. Checkout line endings may differ."
+}

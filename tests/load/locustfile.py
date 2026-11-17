@@ -17,6 +17,7 @@ The login is not measured (BMS-NF-001 covers the three money endpoints). All amo
 """
 import itertools
 import random
+import csv
 
 import json
 import os
@@ -24,6 +25,7 @@ from pathlib import Path
 
 import requests
 from locust import HttpUser, between, events, task
+from locust.stats import PERCENTILES_TO_REPORT, StatsCSV
 
 PASSWORD = "Passw0rd!"
 TELLERS = ["teller1", "teller2", "teller3"]
@@ -31,6 +33,24 @@ CUSTOMER_IDS = [1, 2, 3, 4, 5]
 ALL_ACCOUNTS = [str(1000000000 + n) for n in range(1, 11)]
 _counter = itertools.count()
 _logins = {"successful": 0, "failed": 0}
+
+
+@events.init.add_listener
+def register_final_statistics(environment, **kwargs):
+    """Capture final totals after runner.quit(), including drained requests.
+
+    Locust's normal CSV writer is periodic and can omit the final requests.
+    Keep these separate so its last flush cannot overwrite the final export.
+    """
+    @environment.events.quit.add_listener
+    def save_final_statistics(exit_code, **kwargs):
+        if prefix := os.getenv("BMS_LOAD_FINAL_CSV"):
+            writer = StatsCSV(environment, PERCENTILES_TO_REPORT)
+            for suffix, export in (("stats", writer.requests_csv),
+                                   ("failures", writer.failures_csv),
+                                   ("exceptions", writer.exceptions_csv)):
+                with Path(prefix + "_" + suffix + ".csv").open("w", newline="", encoding="utf-8") as stream:
+                    export(csv.writer(stream))
 
 
 @events.test_stop.add_listener

@@ -6,9 +6,18 @@
 - **Component:** `DS-UI` (Customer Web Interface)
 - **Assigned Member:** Member 2 (Vijay Kumar)
 - **Sprint:** Sprint 2
-- **Protocol Status:** READY FOR EXECUTION (Empirical Validation Pending)
+- **Protocol Status:** Original acceptance protocol retained; five-participant execution not planned for this submission.
 - **Automated Contract Status:** PASS (Automated UI & API regression tests)
-- **Human Participant Status:** PENDING (0 of 5 trials completed; awaiting genuine independent human participant testing)
+- **Human Participant Status:** Minimum sample not met; 0 completed trials are recorded. Two potential pilot participants are available, not yet evidenced as tested.
+
+**Submission disposition (16 November 2026):** the team will not obtain the
+five first-time participants for this submission. Participant availability is
+limited to two people in the remaining testing window. Optional two-person
+pilot results may be recorded as exploratory evidence only; they do not meet
+BMS-NF-004. The original SRS criterion below is unchanged. See
+[deviation S2-01](../deviations.md#s2-01--first-time-user-usability-minimum-sample-not-met)
+for the reason, evidence limits and review disposition. No assessor waiver or
+human pass rate is claimed.
 
 ---
 
@@ -143,5 +152,5 @@ $$\text{Usability Pass Rate} = \left( \frac{\text{Number of Passing Participants
 
 - **Target:** $\ge 90\%$ (requires at least 5/5 passes for a 5-user trial).
 - **Final Result:** `[ Pending Physical Trial Execution ]`
-- **Validation Note:** Under course software engineering standards, test results must reflect genuine human trials and must never be fabricated. Automated regression tests verify all UI, API, and error handling contracts, but BMS-NF-004 will remain marked as pending empirical completion until actual physical participant trials are conducted and signed off.
+- **Validation Note:** Record genuine observations only. Automated regression and browser checks do not establish human usability acceptance. The original five-participant minimum is not met for this submission; any two-person pilot must be reported separately as `x/2`, without claiming BMS-NF-004 passed. Final release documentation must retain this limitation; external acceptance or a waiver is not assumed.
 - **Evaluator Signature:** Member 2 (Vijay Kumar) — `[ Pending ]`

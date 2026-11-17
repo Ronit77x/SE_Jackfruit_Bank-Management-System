@@ -4,7 +4,17 @@
 - **User Story:** `US-14` (Fund transfer usability — Part of #12)
 - **Requirement:** `BMS-NF-004` — First-time-user transfer usability
 - **Standard Acceptance Target:** $\ge 90\%$ (5 out of 5 participants must pass for $n=5$)
-- **Trial Status:** PREPARED / READY FOR EXECUTION (Empirical Results Pending)
+- **Trial Status:** Original five-participant minimum not met; optional two-person pilot has no committed results.
+
+**Submission disposition (16 November 2026):** only two potential independent
+first-time participants are available in the remaining testing window; the
+five-person requirement will not be completed for this submission. Availability
+does not establish participation: zero completed trials are currently recorded.
+If P1/P2 are tested, enter actual observations below and report them as a
+two-person exploratory pilot (`x/2`), not formal acceptance. P3–P5 stay untested;
+do not invent their records or count repeat attempts as new participants.
+See [deviation S2-01](../deviations.md#s2-01--first-time-user-usability-minimum-sample-not-met).
+The original acceptance criteria remain unchanged; no external waiver is claimed.
 
 ---
 
@@ -164,7 +174,7 @@ $$\text{Usability Pass Rate} = \left( \frac{\text{Passing Participants}}{5} \rig
 - **Total Participants Tested:** `[ 0 / 5 ] (Pending Execution)`
 - **Total Passing Participants:** `[ 0 / 5 ]`
 - **Empirical Pass Rate:** `[ PENDING ]`
-- **Sprint 2 Evidence Scope:** Automated and simulated UI verification completed; genuine independent human participant trials remain pending (0 of 5 completed). Full 5-participant physical trials required prior to final release freeze.
+- **Sprint 2 Evidence Scope:** Functional/browser verification is separate from human usability evidence. Zero completed participant trials are recorded; any later P1/P2 observations are pilot evidence only. The five-participant requirement will not be met for this submission and must remain an explicit release limitation (deviation S2-01).
 - **Target ($\ge 90\%$):** Requires 5/5 passes for full acceptance sign-off.
-- **BMS-NF-004 Status:** **PENDING EMPIRICAL TRIAL EXECUTION**
+- **BMS-NF-004 Status:** **MINIMUM SAMPLE NOT MET / FORMAL ACCEPTANCE NOT VERIFIED**
 - **Evaluator Signature:** Member 2 (Vijay Kumar) — `[ Pending Execution ]`

@@ -6,7 +6,7 @@ A web-based **Bank Management System (BMS)** for a single bank, with three roles
 
 | Member | Responsibility | GitHub |
 |---|---|---|
-| Member 1 — Tarini Arora | SRS ownership and integration; authentication/security integration; US-07 documentation | |
+| Member 1 — Tarini Arora | SRS ownership and integration; authentication/security integration; US-07 documentation | `@TariniArora` |
 | Member 2 — Vijay Kumar | Test plan, test cases and account-management work | `@vijaykumar-187` |
 | Member 3 — Ronit Prasad | SAD, architecture and repository ownership | `@Ronit77x` |
 | Member 4 — Vaibhava L | Security requirements, NFRs, traceability and audit-related work | `@Vaibhav-alt0246` |
@@ -160,9 +160,9 @@ The `transactions` model contains `id`, `account_id`, `type`, `amount`, `balance
 
 ## Sprint demos and release status
 
-- [Sprint 1 demo video](docs/demo/sprint1-demo.mp4)
+- [Sprint 1 demo video](docs/demo/sprint1-demo.mp4), recorded by Ronit (Member 3).
 - [Sprint 2 demo video](docs/demo/sprint2-demo.mp4), recorded by Vaibhava L. (Member 4). See the [demo record](docs/demo/sprint-2-demo-runbook.md) for the demonstrated workflows and verification limits.
 - Submission baseline: `754d03c6d86927e490438ff7286c76f8258a2a12`, agreed by the team on 17 November 2026. No Git tag is implied.
-- Team agreement confirmed by Ronit on 17 November 2026. Application scope is frozen; this final documentation update records verification and does not change application code.
+- Application scope is frozen; this final documentation update records verification and does not change application code.
 
-See the [final verification record](docs/release/FINAL_VERIFICATION_2026-11-17.md) for exact test results, main CI, smoke checks and remaining acceptance limitations. Merge and CI validation of this documentation PR complete the release-record publication step.
+See the [final verification record](docs/release/FINAL_VERIFICATION_2026-11-17.md) for exact test results, main CI, smoke checks and remaining acceptance limitations.
